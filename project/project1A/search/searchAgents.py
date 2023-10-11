@@ -292,6 +292,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        self.goal_state = (True, True, True, True)
 
     def getStartState(self):
         """
@@ -302,8 +303,7 @@ class CornersProblem(search.SearchProblem):
         # util.raiseNotDefined()
 
         # state: (x, y, [bool1, bool2, bool3, bool4])
-        return (self.startingPosition, False, False, False, False)
-
+        return (self.startingPosition, (False, False, False, False))
 
     def isGoalState(self, state: Any):
         """
@@ -311,10 +311,8 @@ class CornersProblem(search.SearchProblem):
         """
         "*** YOUR CODE HERE ***"
         # util.raiseNotDefined()
-        pos, bool1, bool2, bool3, bool4 = state
-        if bool1 == True and bool2 == True and bool3 == True and bool4 == True:
-            return True
-        return False
+        pos, corner_state = state
+        return corner_state == self.goal_state
 
     def getSuccessors(self, state: Any):
         """
@@ -337,7 +335,8 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
-            pos, bool1, bool2, bool3, bool4 = state
+            
+            pos, (bool1, bool2, bool3, bool4) = state
             x, y = pos
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = x + int(dx), y + int(dy)
@@ -345,15 +344,15 @@ class CornersProblem(search.SearchProblem):
             hitsWall = self.walls[nextx][nexty]
             if not hitsWall:
                 if nextPos == self.corners[0]:
-                    successors.append(((nextPos, True, bool2, bool3, bool4), action, 1))
+                    successors.append(((nextPos, (True, bool2, bool3, bool4)), action, 1))
                 elif nextPos == self.corners[1]:
-                    successors.append(((nextPos, bool1, True, bool3, bool4), action, 1))
+                    successors.append(((nextPos, (bool1, True, bool3, bool4)), action, 1))
                 elif nextPos == self.corners[2]:
-                    successors.append(((nextPos, bool1, bool2, True, bool4), action, 1))
+                    successors.append(((nextPos, (bool1, bool2, True, bool4)), action, 1))
                 elif nextPos == self.corners[3]:
-                    successors.append(((nextPos, bool1, bool2, bool3, True), action, 1))
+                    successors.append(((nextPos, (bool1, bool2, bool3, True)), action, 1))
                 else:
-                    successors.append(((nextPos, bool1, bool2, bool3, bool4), action, 1))
+                    successors.append(((nextPos, (bool1, bool2, bool3, bool4)), action, 1))
             
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -389,7 +388,40 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    # return 0 # Default to trivial solution
+    pos, corner_state = state
+
+    import sys
+    cost = sys.maxsize
+    corner_num = None
+    
+    for i in range(len(corner_state)):
+        if corner_state[i] == False:
+            if util.manhattanDistance(pos, corners[i]) < cost:
+                corner_num = i
+                cost = util.manhattanDistance(pos, corners[i])
+
+    if corner_num == None:
+        return 0
+    # return cost
+
+    # generate the permutations of the 1,2,3,4
+    corner = [i for i in range(4) if ((corner_state[i] == False) and (i != corner_num))]
+
+    while corner != []:
+        next_corner = None
+        next_cost = sys.maxsize
+
+        for num in corner:
+            if next_cost > util.manhattanDistance(corners[corner_num], corners[num]):
+                next_cost = util.manhattanDistance(corners[corner_num], corners[num])
+                next_corner = num
+        
+        cost += next_cost
+        corner_num = next_corner
+        corner.remove(next_corner)
+        
+    return cost
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
