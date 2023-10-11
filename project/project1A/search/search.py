@@ -72,6 +72,56 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+def nullHeuristic(state, problem=None):
+    """
+    A heuristic function estimates the cost from the current state to the nearest
+    goal in the provided SearchProblem.  This heuristic is trivial.
+    """
+    return 0
+
+def search(problem: SearchProblem, dataStructure, heuristic=nullHeuristic):
+    """
+    print("Start:", problem.getStartState())
+    print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
+    print("Start's successors:", problem.getSuccessors(problem.getStartState()))
+    """
+
+    # init
+    final_actions = []
+    visited = set()
+    datastructure = dataStructure
+
+    if isinstance(datastructure, util.Stack) or isinstance(datastructure, util.Queue):
+        datastructure.push((problem.getStartState(), [], 0))
+    elif isinstance(datastructure, util.PriorityQueue):
+        datastructure.push((problem.getStartState(), [], 0), 0)
+
+    # dfs
+    while not datastructure.isEmpty():
+        pos, actions, total_cost = datastructure.pop()
+        if pos in visited:
+            continue
+        
+        visited.add(pos)
+
+        if problem.isGoalState(pos):
+            final_actions = actions
+            break
+        for nextPos, action, cost in problem.getSuccessors(pos):
+            if nextPos not in visited:
+
+                if isinstance(datastructure, util.Stack) or isinstance(datastructure, util.Queue):
+                    datastructure.push((nextPos, actions + [action], total_cost + cost))
+                elif isinstance(datastructure, util.PriorityQueue):
+                    datastructure.push((nextPos, actions + [action], total_cost + cost), total_cost + cost + heuristic(nextPos, problem))
+                # datastructure.push((nextPos, actions + [action], total_cost + cost))
+
+    print(final_actions)
+    print('length of path = ', len(final_actions))
+    print('total cost = ', total_cost)
+    return final_actions
+
+
 def depthFirstSearch(problem: SearchProblem):
     """
     Search the deepest nodes in the search tree first.
@@ -87,29 +137,32 @@ def depthFirstSearch(problem: SearchProblem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    return search(problem, util.Stack())    
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    return search(problem, util.Queue())
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
 
-def nullHeuristic(state, problem=None):
-    """
-    A heuristic function estimates the cost from the current state to the nearest
-    goal in the provided SearchProblem.  This heuristic is trivial.
-    """
-    return 0
+    return search(problem, util.PriorityQueue())
+
+
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    return search(problem, util.PriorityQueue(), heuristic)
 
 
 # Abbreviations

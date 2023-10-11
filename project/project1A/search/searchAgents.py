@@ -299,14 +299,22 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+
+        # state: (x, y, [bool1, bool2, bool3, bool4])
+        return (self.startingPosition, False, False, False, False)
+
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+        pos, bool1, bool2, bool3, bool4 = state
+        if bool1 == True and bool2 == True and bool3 == True and bool4 == True:
+            return True
+        return False
 
     def getSuccessors(self, state: Any):
         """
@@ -329,7 +337,24 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
-
+            pos, bool1, bool2, bool3, bool4 = state
+            x, y = pos
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = x + int(dx), y + int(dy)
+            nextPos = (nextx, nexty)
+            hitsWall = self.walls[nextx][nexty]
+            if not hitsWall:
+                if nextPos == self.corners[0]:
+                    successors.append(((nextPos, True, bool2, bool3, bool4), action, 1))
+                elif nextPos == self.corners[1]:
+                    successors.append(((nextPos, bool1, True, bool3, bool4), action, 1))
+                elif nextPos == self.corners[2]:
+                    successors.append(((nextPos, bool1, bool2, True, bool4), action, 1))
+                elif nextPos == self.corners[3]:
+                    successors.append(((nextPos, bool1, bool2, bool3, True), action, 1))
+                else:
+                    successors.append(((nextPos, bool1, bool2, bool3, bool4), action, 1))
+            
         self._expanded += 1 # DO NOT CHANGE
         return successors
 
