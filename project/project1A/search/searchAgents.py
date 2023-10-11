@@ -420,7 +420,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
         cost += next_cost
         corner_num = next_corner
         corner.remove(next_corner)
-        
+
     return cost
 
 class AStarCornersAgent(SearchAgent):
@@ -515,7 +515,16 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+
+    # print(foodGrid.asList())
+    # print("---------------------------------")
+    
+    dis = [util.manhattanDistance(position, pos) for pos in foodGrid.asList()]
+    # dis = [((position[0] - pos[0]) ** 2 + (position[1] - pos[1]) ** 2) for pos in foodGrid.asList()]
+    
+    if dis == []:
+        return 0
+    return max(dis)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
