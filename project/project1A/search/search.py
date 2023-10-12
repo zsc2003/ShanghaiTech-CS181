@@ -116,9 +116,9 @@ def search(problem: SearchProblem, dataStructure, heuristic=nullHeuristic):
                     datastructure.push((nextPos, actions + [action], total_cost + cost), total_cost + cost + heuristic(nextPos, problem))
                 # datastructure.push((nextPos, actions + [action], total_cost + cost))
 
-    print(final_actions)
-    print('length of path = ', len(final_actions))
-    print('total cost = ', total_cost)
+    # print(final_actions)
+    # print('length of path = ', len(final_actions))
+    # print('total cost = ', total_cost)
     return final_actions
 
 

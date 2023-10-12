@@ -519,12 +519,28 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     # print(foodGrid.asList())
     # print("---------------------------------")
     
-    dis = [util.manhattanDistance(position, pos) for pos in foodGrid.asList()]
+    point_list = foodGrid.asList()
+    dis = [util.manhattanDistance(position, pos) for pos in point_list]
     # dis = [((position[0] - pos[0]) ** 2 + (position[1] - pos[1]) ** 2) for pos in foodGrid.asList()]
     
     if dis == []:
         return 0
-    return max(dis)
+
+    # I have found a function called MazeDistance in searchAgnets.py!!!!!!
+    # in the bottom of this file
+    point_list += [position]
+    dis = [(mazeDistance(pos1, pos2, problem.startingGameState), pos1, pos2) for pos1 in point_list for pos2 in point_list if pos1 != pos2]
+
+    # get the farest distance on the maze, get two node
+    # then the heuristic :
+    # is the distance from current position to the nearer node
+    # then go the farthest distance
+
+    # sort by the first element of the tuple in the list
+    farthest, node1, node2 = max(dis, key=lambda x: x[0])
+    nearer = min(util.manhattanDistance(position, node1), util.manhattanDistance(position, node2))
+
+    return farthest + nearer
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
