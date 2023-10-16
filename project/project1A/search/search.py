@@ -155,15 +155,12 @@ def uniformCostSearch(problem: SearchProblem):
 
     return search(problem, util.PriorityQueue())
 
-
-
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
     # util.raiseNotDefined()
 
     return search(problem, util.PriorityQueue(), heuristic)
-
 
 # Abbreviations
 bfs = breadthFirstSearch

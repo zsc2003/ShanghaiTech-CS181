@@ -392,7 +392,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     pos, corner_state = state
 
     import sys
-    cost = sys.maxsize
+    cost = sys.maxsize 
     corner_num = None
     
     for i in range(len(corner_state)):
@@ -410,7 +410,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
 
     while corner != []:
         next_corner = None
-        next_cost = sys.maxsize
+        next_cost = sys.maxsize 
 
         for num in corner:
             if next_cost > util.manhattanDistance(corners[corner_num], corners[num]):
@@ -580,12 +580,6 @@ class ClosestDotSearchAgent(SearchAgent):
         prob = PositionSearchProblem(gameState, start=startPosition, goal=pos, warn=False, visualize=False)
         return search.bfs(prob)
 
-
-
-
-
-
-
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
     A search problem for finding a path to any food.
@@ -620,15 +614,165 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+        if state in self.food.asList():
+            return True
+        return False
 
 class ApproximateSearchAgent(Agent):
     "Implement your agent here.  Change anything but the class name."
-    
+    def get_idx(self, pos: Tuple[int, int]) -> int:
+        return pos[0] + pos[1] * self.width
+
+    def floyd(self):
+        import sys
+        self.dis = [[sys.maxsize  for _ in range(self.point_num)] for _ in range(self.point_num)]
+
+        # generate distant map
+        move_dir = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        for (x, y) in self.accessible:
+            idx1 = self.get_idx((x, y))
+            self.dis[idx1][idx1] = 0
+            for (dx, dy) in move_dir:
+                nextx, nexty = x + dx, y + dy
+                if (nextx, nexty) in self.accessible:
+                    idx2 = self.get_idx((nextx, nexty))
+                    self.dis[idx1][idx2] = 1
+        
+        # floyd
+        for posk in self.accessible:
+            for posi in self.accessible:
+                for posj in self.accessible:
+                    idxi, idxj, idxk = self.get_idx(posi), self.get_idx(posj), self.get_idx(posk)
+                    self.dis[idxi][idxj] = min(self.dis[idxi][idxj], self.dis[idxi][idxk] + self.dis[idxk][idxj])
+        """
+        for i in range(450):
+            for j in range(450):
+                assert(self.dis[i][j] == self.dis[j][i])
+                # if(self.dis[i][j] == sys.maxsize ):
+                    # self.dis[i][j] = self.dis[j][i]= -1
+        print('Truly symmetric')
+        # print(self.dis)
+        """
+
+    def generate_naive_path(self, state):
+        food_list = self.problem.food.asList()
+        current_pos = state.getPacmanPosition()
+        self.naive_path = [current_pos]
+
+        import sys
+        while food_list != []:
+            min_manhattan_dis = sys.maxsize
+            min_maze_dis = sys.maxsize
+            next_pos = None
+            for pos in food_list:
+                manhattan_dis = util.manhattanDistance(current_pos, pos)
+                if manhattan_dis < min_manhattan_dis:
+                    maze_dis = mazeDistance(current_pos, pos, state)
+                    if maze_dis < min_maze_dis:
+                        min_manhattan_dis = manhattan_dis
+                        min_maze_dis = maze_dis
+                        next_pos = pos
+
+            problem = PositionSearchProblem(state, start=current_pos, goal=next_pos, warn=False, visualize=False)
+            move = search.bfs(problem)[0]
+            x, y = current_pos
+            if move == Directions.EAST:
+                x += 1
+            elif move == Directions.SOUTH:
+                y -= 1
+            elif move == Directions.WEST:
+                x -= 1
+            elif move == Directions.NORTH:
+                y += 1
+            
+            current_pos = (x, y)
+            if current_pos in food_list:
+                food_list.remove(current_pos)
+                self.naive_path.append(current_pos)
+
+    def get_dis(self, num1, num2):
+        if num2 >= len(self.optimal_path):
+            return 0
+        pos1 = self.optimal_path[num1]
+        pos2 = self.optimal_path[num2]
+        idx1 = self.get_idx(pos1)
+        idx2 = self.get_idx(pos2)
+        return self.dis[idx1][idx2]
+
+    def optimal(self, state):
+        # (0 --> i-1) --> (i --> j) --> j+1 --> final
+        # and maybe swap the two node(two cluster) could have a better performance 
+        # (0 --> i-1) --> (j --> i) --> j+1 --> final
+        # the differ of two path is
+        # distant_diff = d(i-1, j) + d(i, j+1) - d(i-1, i) - d(j, j+1)  
+        # if distant_diff < 0
+        # then the update one is optimal
+
+        step = self.calc_step(state, self.naive_path)
+        print('original total step = ', step)
+
+        self.optimal_path = self.naive_path
+        path_length = len(self.naive_path)
+        while True:
+            for i in range(1, path_length - 1):
+                for j in range(i + 1, path_length):
+                    delta = self.get_dis(i-1, j) + self.get_dis(i, j+1) - self.get_dis(i-1, i) - self.get_dis(j, j+1)
+                    if delta < 0:
+                        front = list(self.optimal_path[0:i])
+                        optimizing_area = list(self.optimal_path[i:j+1])
+                        optimizing_area.reverse()
+                        back = list(self.optimal_path[j+1:path_length])
+
+                        # print('delta = ', delta)
+                        # print(f'origin = {self.calc_step(state, self.optimal_path)}')
+
+                        self.optimal_path = front + optimizing_area + back
+                        step += delta
+                        # print(f'optimized = {self.calc_step(state, self.optimal_path)}')
+                        print('optimizing total step = ', step)
+                        # print('-----------------------------------')
+                        if step < 285:
+                            return
+                        # 284!!!!!!!
+                        # how to optimize the remaining 4 steps!!!!!!
+
+    def calc_step(self, state, calc_path):
+        path = [pos for pos in calc_path]
+        pos = path[0]
+        path.remove(pos)
+        step = 0
+        while path != []:
+            problem = PositionSearchProblem(state, start=pos, goal=path[0], warn=False, visualize=False)
+            length = len(search.bfs(problem))
+            step += length
+            # print(length == self.dis[self.get_idx(pos)][self.get_idx(path[0])])
+            pos = path[0]
+            path.remove(pos)
+        return step
+
     def registerInitialState(self, state):
         "This method is called before any moves are made."
         "*** YOUR CODE HERE ***"
-        
+
+        # basic settings
+        self.walls = state.getWalls()
+        self.problem = AnyFoodSearchProblem(state)
+        self.height, self.width = self.problem.walls.height, self.problem.walls.width - 1
+        self.point_num = self.height * self.width
+        # print('height, width: ', self.height, self.width)
+        # print('point_num: ', self.point_num)
+        # print('food num: ', len(self.problem.food.asList()))
+        # print('num of not wall', self.point_num - len(self.problem.walls.asList()))
+
+        self.accessible = self.problem.food.asList() + [self.problem.startState]
+        self.floyd()
+        self.generate_naive_path(state)
+        self.optimal(state)
+        print('final total step = ', self.calc_step(state, self.optimal_path))
+
+        self.step = 0
+
     def getAction(self, state):
         """
         From game.py: 
@@ -636,7 +780,17 @@ class ApproximateSearchAgent(Agent):
         Directions.{North, South, East, West, Stop}
         """ 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+
+        # basic settings
+        current_pos = state.getPacmanPosition()
+        if current_pos == self.optimal_path[self.step]:
+            self.step += 1
+        # return self.l[self.step]
+        new_pos = self.optimal_path[self.step]
+
+        problem = PositionSearchProblem(state, start=current_pos, goal=new_pos, warn=False, visualize=False)
+        return search.bfs(problem)[0]
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:
     """
