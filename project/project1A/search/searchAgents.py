@@ -722,7 +722,7 @@ class ApproximateSearchAgent(Agent):
                         front = list(self.optimal_path[0:i])
                         optimizing_area = list(self.optimal_path[i:j+1])
                         optimizing_area.reverse()
-                        back = list(self.optimal_path[j+1:path_length])
+                        back = list(self.optimal_path[j+1:])
 
                         # print('delta = ', delta)
                         # print(f'origin = {self.calc_step(state, self.optimal_path)}')
