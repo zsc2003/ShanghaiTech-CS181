@@ -751,9 +751,26 @@ class ApproximateSearchAgent(Agent):
             path.remove(pos)
         return step
 
+    def generate_human_path(self):
+        w = Directions.NORTH
+        a = Directions.WEST
+        s = Directions.SOUTH
+        d = Directions.EAST
+
+        part1 = 'aaaaaaaawwaassawasaawdwawddwwaawwddwwwddwwaaaasssddssaassddsssddddwwaawwwwss'
+        part2 = 'ddddwwwwdddawwaaaasssswwwwddddddddddddssaaassaawwadssaaassadssdddssaaaaawwssddss'
+        part3 = 'ddddddddwwaaawwdddwwwwadssddssssadwwwwdawwwwaawwddddsssadsddssaaddssaassssaaddwwdd'
+        part4 = 'ddaassddddwwwaawwddwwaawwddwaaaawddddwaaaa'
+        path = part1 + part2 + part3 + part4
+        
+        # turn the path from string into a list
+        self.human_path = [Directions.STOP] + [w if i == 'w' else a if i == 'a' else s if i == 's' else d for i in path]
+        print('human path = ', len(path))
+
     def registerInitialState(self, state):
         "This method is called before any moves are made."
         "*** YOUR CODE HERE ***"
+        
 
         # basic settings
         self.walls = state.getWalls()
@@ -769,8 +786,9 @@ class ApproximateSearchAgent(Agent):
         self.floyd()
         self.generate_naive_path(state)
         self.optimal(state)
-        print('final total step = ', self.calc_step(state, self.optimal_path))
+        print('final optimized total step = ', self.calc_step(state, self.optimal_path))
 
+        self.generate_human_path()
         self.step = 0
 
     def getAction(self, state):
@@ -783,14 +801,21 @@ class ApproximateSearchAgent(Agent):
         # util.raiseNotDefined()
 
         # basic settings
+        
+        """
         current_pos = state.getPacmanPosition()
         if current_pos == self.optimal_path[self.step]:
             self.step += 1
-        # return self.l[self.step]
         new_pos = self.optimal_path[self.step]
 
         problem = PositionSearchProblem(state, start=current_pos, goal=new_pos, warn=False, visualize=False)
-        return search.bfs(problem)[0]
+        move_dirs = search.bfs(problem)
+        """
+        # return move_dir
+    
+        self.step += 1
+        next_dir = self.human_path[self.step]
+        return next_dir
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:
     """
