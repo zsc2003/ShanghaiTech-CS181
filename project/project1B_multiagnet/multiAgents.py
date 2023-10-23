@@ -29,7 +29,6 @@ class ReflexAgent(Agent):
     headers.
     """
 
-
     def getAction(self, gameState: GameState):
         """
         You do not need to change this method, but you're welcome to.
@@ -49,7 +48,6 @@ class ReflexAgent(Agent):
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
         "Add more of your code here if you want to"
-
         return legalMoves[chosenIndex]
 
     def evaluationFunction(self, currentGameState: GameState, action):
@@ -75,7 +73,56 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        return childGameState.getScore()
+        # print(newPos)
+
+        # distance between newPos and newGhostStates
+        # I am more likely to use the maze_distant here, but it needs to much work .......
+        dists_to_ghost = [manhattanDistance(newPos, ghostState.getPosition()) for ghostState in newGhostStates]
+        
+        # print(dists_to_ghost)
+        # print(newGhostStates[0].getPosition())
+
+        old_food = currentGameState.getFood()
+        # I am more likely to use the maze_distant here, but it needs to much work .......
+        dists_to_food = [manhattanDistance(newPos, food) for food in old_food.asList()]
+        # print(newFood.asList())
+        # print(dists_to_food)
+
+        # As features, try the reciprocal of important values (such as distance to food) rather than just the values themselves.
+        # The evaluation function you're writing is evaluating state-action pairs; in later parts of the project, you'll be evaluating states.
+        
+        # print(newScaredTimes)
+        for i, scared_time in enumerate(newScaredTimes):
+            if scared_time > 0 and newPos == newGhostStates[i].getPosition():
+                return 100
+            if scared_time <= 0 and newPos == newGhostStates[i].getPosition():
+                return -500
+
+        min_dist_to_ghost = min(dists_to_ghost) if len(dists_to_ghost) > 0 else 0
+        min_dist_to_food = min(dists_to_food) if len(dists_to_food) > 0 else 0
+
+        # print(newScaredTimes)
+        if newPos in old_food.asList():
+            # print('1111')
+            return 10
+        
+        if min_dist_to_ghost >= 5 and action == Directions.STOP:
+            return -1
+
+        weight = 1
+        if min_dist_to_ghost < 2:
+            weight = 100
+        
+        # reciprocal
+        score = 10 / min_dist_to_food - weight / min_dist_to_ghost
+        # print(score)
+        # if min_dist_to_ghost < 2:
+            # score = -500 * min_dist_to_ghost
+        
+        # print(score)
+        return score
+        # print(childGameState.getScore())
+        # return childGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
@@ -136,7 +183,12 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+
+
+
+
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -148,7 +200,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+        self.evaluationFunction
+
+
+
+
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
