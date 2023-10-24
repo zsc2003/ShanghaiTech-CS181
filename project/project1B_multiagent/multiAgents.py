@@ -168,6 +168,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
     Your minimax agent (question 2)
     """
+
     inf = 1926081719491001
 
     # adversarial(ghost) min_node
@@ -233,27 +234,97 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         # the nodes connected to the root(pacman) are min_nodes
         # pacman is the root, all the ghosts are the first depth
-        pacman_actions = [(action, self.min_node(gameState.getNextState(0, action), 0, 1, ghost_num)) for action in gameState.getLegalActions(0)]
-        pacman_actions.sort(key=lambda x:x[1], reverse=True)
-        return pacman_actions[0][0]
+
+        max_val = -self.inf
+        act = None
+
+        for action in gameState.getLegalActions(0):
+            next_state = gameState.getNextState(0, action)
+            val = self.min_node(next_state, 0, 1, ghost_num)
+            if max_val < val:
+                act = action
+                max_val = val
+            
+        return act
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
     """
 
+    inf = 1926081719491001
+
+    # adversarial(ghost) min_node
+    def min_node(self, gameState : GameState, depth, agent_id, ghost_num, alpha, beta):
+        min_val = self.inf
+
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            return self.evaluationFunction(gameState)
+
+        # action for ghost, agent_num in [1, ghost_num]
+        for action in gameState.getLegalActions(agent_id):
+            next_state = gameState.getNextState(agent_id, action)
+
+            if agent_id == ghost_num: # last ghost, go to the next depth for pacman
+                min_val = min(min_val, self.max_node(next_state, depth + 1, ghost_num, alpha, beta))
+            else: # consider the next ghost
+                min_val = min(min_val, self.min_node(next_state, depth, agent_id + 1, ghost_num, alpha, beta))
+            
+            # alpha-beta purning
+            if min_val < alpha:
+                return min_val
+            beta = min(beta, min_val)
+        return min_val
+
+    # pacman max_node
+    def max_node(self, gameState : GameState, depth, ghost_num, alpha, beta):
+        max_val = -self.inf
+
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            return self.evaluationFunction(gameState)
+
+        # action for pacman, agent_id = 0
+        for action in gameState.getLegalActions(0):
+            next_state = gameState.getNextState(0, action)
+            max_val = max(max_val, self.min_node(next_state, depth, 1, ghost_num, alpha, beta)) # the ghost's id start from 1
+
+            # alpha-beta purning
+            if max_val > beta:
+                return max_val
+            alpha = max(alpha, max_val)
+
+        return max_val
+    
     def getAction(self, gameState: GameState):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
         # util.raiseNotDefined()
-        # self.evaluationFunction
-        
 
+        ghost_num = gameState.getNumAgents() - 1 # 0 for pacman, [1, ghost_num] for ghosts
+        # print("ghost_num = ", ghost_num)
 
+        # the nodes connected to the root(pacman) are min_nodes
+        # pacman is the root, all the ghosts are the first depth
 
+        act = None
 
+        alpha = -self.inf
+        beta = self.inf
+
+        for action in gameState.getLegalActions(0):
+            next_state = gameState.getNextState(0, action)
+            val = self.min_node(next_state, 0, 1, ghost_num, alpha, beta)
+            
+            # not prune on equality !!
+            if val > beta:
+                return act
+            if val > alpha:
+                act = action
+                alpha = val
+            
+        return act
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
