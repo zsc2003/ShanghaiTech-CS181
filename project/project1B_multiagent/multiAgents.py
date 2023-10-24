@@ -85,21 +85,29 @@ class ReflexAgent(Agent):
         old_food = currentGameState.getFood()
         # I am more likely to use the maze_distant here, but it needs to much work .......
         dists_to_food = [manhattanDistance(newPos, food) for food in old_food.asList()]
+        dists_to_capsules = [manhattanDistance(newPos, capsule) for capsule in currentGameState.getCapsules()]
+        
         # print(newFood.asList())
         # print(dists_to_food)
+        # print(currentGameState.getCapsules())
 
         # As features, try the reciprocal of important values (such as distance to food) rather than just the values themselves.
         # The evaluation function you're writing is evaluating state-action pairs; in later parts of the project, you'll be evaluating states.
         
         # print(newScaredTimes)
+        
+        if newPos in currentGameState.getCapsules(): # try to get the capsules
+            return 100
+        
         for i, scared_time in enumerate(newScaredTimes):
-            if scared_time > 0 and newPos == newGhostStates[i].getPosition():
+            if scared_time > 0 and newPos == newGhostStates[i].getPosition(): # eat the ghost
                 return 100
-            if scared_time <= 0 and newPos == newGhostStates[i].getPosition():
+            if scared_time <= 0 and newPos == newGhostStates[i].getPosition(): # be eaten by the ghost
                 return -500
 
         min_dist_to_ghost = min(dists_to_ghost) if len(dists_to_ghost) > 0 else 0
         min_dist_to_food = min(dists_to_food) if len(dists_to_food) > 0 else 0
+        min_dist_to_capsule = min(dists_to_capsules) if len(dists_to_capsules) > 0 else 1926
 
         # print(newScaredTimes)
         if newPos in old_food.asList():
@@ -115,6 +123,8 @@ class ReflexAgent(Agent):
         
         # reciprocal
         score = 10 / min_dist_to_food - weight / min_dist_to_ghost
+        if min_dist_to_capsule <= 2:
+            score += 100 / min_dist_to_capsule
         # print(score)
         # if min_dist_to_ghost < 2:
             # score = -500 * min_dist_to_ghost
@@ -158,6 +168,39 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
     Your minimax agent (question 2)
     """
+    inf = 1926081719491001
+
+    # adversarial(ghost) min_node
+    def min_node(self, gameState : GameState, depth, agent_id, ghost_num):
+        min_val = self.inf
+
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            return self.evaluationFunction(gameState)
+
+        # action for ghost, agent_num in [1, ghost_num]
+        for action in gameState.getLegalActions(agent_id):
+            next_state = gameState.getNextState(agent_id, action)
+
+            if agent_id == ghost_num: # last ghost, go to the next depth for pacman
+                min_val = min(min_val, self.max_node(next_state, depth + 1, ghost_num))
+            else: # consider the next ghost
+                min_val = min(min_val, self.min_node(next_state, depth, agent_id + 1, ghost_num))
+        
+        return min_val
+
+    # pacman max_node
+    def max_node(self, gameState : GameState, depth, ghost_num):
+        max_val = -self.inf
+
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            return self.evaluationFunction(gameState)
+
+        # action for pacman, agent_id = 0
+        for action in gameState.getLegalActions(0):
+            next_state = gameState.getNextState(0, action)
+            max_val = max(max_val, self.min_node(next_state, depth, 1, ghost_num)) # the ghost's id start from 1
+        
+        return max_val
 
     def getAction(self, gameState: GameState):
         """
@@ -185,10 +228,14 @@ class MinimaxAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
         # util.raiseNotDefined()
 
+        ghost_num = gameState.getNumAgents() - 1 # 0 for pacman, [1, ghost_num] for ghosts
+        # print("ghost_num = ", ghost_num)
 
-
-
-
+        # the nodes connected to the root(pacman) are min_nodes
+        # pacman is the root, all the ghosts are the first depth
+        pacman_actions = [(action, self.min_node(gameState.getNextState(0, action), 0, 1, ghost_num)) for action in gameState.getLegalActions(0)]
+        pacman_actions.sort(key=lambda x:x[1], reverse=True)
+        return pacman_actions[0][0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -201,8 +248,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         # util.raiseNotDefined()
-        self.evaluationFunction
-
+        # self.evaluationFunction
+        
 
 
 
