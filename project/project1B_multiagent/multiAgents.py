@@ -456,110 +456,12 @@ def betterEvaluationFunction(currentGameState: GameState):
 # Abbreviation
 better = betterEvaluationFunction
 
-
-q6_count: int = 0  # This variable indicates which game round we are in.
-
-def betterEvaluationFunctionQ6(currentGameState: GameState) -> float:
-    curr_pos = currentGameState.getPacmanPosition()
-    curr_foods = currentGameState.getFood().asList()
-    curr_ghosts = currentGameState.getGhostStates()
-    curr_capsules = currentGameState.getCapsules()  # capsules
-    expected_score: float = currentGameState.getScore()  # Get the current score
-
-    # In this function, we did the following (similar to what we did in Q5, 'betterEvaluationFunction' func)
-    #
-    #         Initialize expected score to the current score.
-    #         If there's capsules left, consider the nearest capsule.
-    #         If there's no capsule (only normal food), consider the nearest ghost.
-    #         If there's ghost(s):
-    #             If the ghost is scared and close enough (we have a chance to eat them),
-    #                 we can gain a scared-ghost-bonus.
-    #             If the ghost is scared but far away, we won't do anything to the score.
-    #             If the ghost isn't scared, the closer, the higher the loss is (since we are closer to danger).
-    #         Add the gain or loss to current score to get expected score.
-
-    # CLAIM:
-    # 'WEIGHT_FOOD', 'WEIGHT_CAPSULE', 'WEIGHT_GHOST', 'WEIGHT_SCARED_GHOST' are the basic parameters.
-    # 'coefficients' containing a float of four are adjustments for them.
-    # I randomly generated these 'coefficients', tried different searching depth (2 or 3),
-    # simulated the testcases for more than 63000 times on my own server,
-    # and resulted in the following float number results like (0.05727021, 0.22926805, 0.11200294, 0.75189848).
-    # These numbers are all randomly generated and tested by myself.
-    # If some other students happens to find the same numbers, it must be a coincidence.
-
-    WEIGHT_FOOD: float = 15.0
-    WEIGHT_CAPSULE: float = 20.0
-    WEIGHT_GHOST: float = -3000.0
-    WEIGHT_SCARED_GHOST: float = 2000.0
-    coefficients_list = [
-        (0, 0, 0, 0),  # placeholder
-        (0.05727021, 0.22926805, 0.11200294, 0.75189848),  # case 1; depth = 3; legal 2847
-        (0.05727021, 0.22926805, 0.11200294, 0.75189848),  # case 2; depth = 3; legal 3037
-        (0.71945386, 0.38327929, 0.00785529, 0.87712883),  # case 3; depth = 3; legal 3417
-        (0.80605661, 0.37036110, 0.02462315, 0.56388212),  # case 4; depth = 3; legal 2797
-        (0.11927982, 0.29239600, 0.04996382, 0.39456618),  # case 5; depth = 3; legal 3637
-        (0.03667265, 0.99115328, 0.09935081, 0.57059650),  # case 6; depth = 3; legal 3071
-        (0.89790356, 0.26427819, 0.36721456, 0.52057139),  # case 7; depth = 3; legal 3347
-        (0.50064533, 0.32248629, 0.13772379, 0.74437512),  # case 8; depth = 3; legal 3224
-        (0.42554790, 0.28855117, 0.01935615, 0.34512226),  # case 9; depth = 3; legal 3208
-        (0.18157965, 0.61999352, 0.02527364, 0.25005017)  # case 10; depth = 3; legal 2839
-    ]
-
-    coefficients = coefficients_list[q6_count]
-
-    # If there are some capsules, consider capsules food
-    if curr_capsules:  # If there are capsules, consider the nearest one
-        min_distance: float = 0x3f3f3f3f
-        for capsule in curr_capsules:  # get the nearest capsule
-            min_distance = min(util.manhattanDistance(capsule, curr_pos), min_distance)
-        expected_score += WEIGHT_CAPSULE * coefficients[0] * (1.0 / min_distance)
-    else:  # if there's no capsules, consider normal food only
-        min_distance: float = 0x3f3f3f3f
-        for food in curr_foods:  # get the nearest food
-            min_distance = min(util.manhattanDistance(food, curr_pos), min_distance)
-        expected_score += WEIGHT_FOOD * coefficients[1] * (1.0 / min_distance)
-
-    scared_bonus: float = 0
-    for ghost in curr_ghosts:
-        ghost_pos = ghost.getPosition()
-        ghost_scared = ghost.scaredTimer
-        if ghost_scared > 0:  # ghost scared
-            # get the distance to the ghost
-            distance: float = util.manhattanDistance(curr_pos, ghost_pos)
-            # If scared ghost is close enough that we have a chance to eat them.
-            # The closer the ghost is, the higher bonus we can get.
-            if distance < ghost_scared:
-                scared_bonus = max(scared_bonus, WEIGHT_SCARED_GHOST * coefficients[2] * (1.0 / distance))
-            # If scared ghost is far away, we won't change the expected score. Nothing here.
-        else:  # ghost is not scared
-            if curr_pos == ghost_pos:  # The pacman is eaten by the ghost
-                # Eating by the ghost is dangerous. Being eaten itself leaves a punishment of 500.
-                # Therefore, we would give a higher loss in this case: the expected score would be negative.
-                expected_score = WEIGHT_GHOST * coefficients[3]
-
-    return expected_score + scared_bonus
-
-
-# Q6 class
-class ContestAgent(AlphaBetaAgent):
+class ContestAgent(MultiAgentSearchAgent):
     """
-      Your agent for the mini-contest.
-
-      I noticed that in question 6, ghosts are 'directional ghosts'.
-      They move towards or away from (if scared) pacman with probability 0.8, and move randomly with probability 0.2.
-      According to the lecture, we may use Expectimax given the opponent information.
-      However, after tremendous number of simulations, Alpha-Beta performs better under special parameters,
-      therefore we use Alpha-Beta search agent in this question.
-      The class is inherited from 'AlphaBetaAgent'.
+      Your agent for the mini-contest
     """
 
-    def __init__(self):
-        super().__init__()
-        self.depth = 3  # search depth limit
-        # change evaluation func
-        self.evaluationFunction = util.lookup('betterEvaluationFunctionQ6', globals())
-
-    def getAction(self, gameState: GameState) -> str:
+    def getAction(self, gameState: GameState):
         """
           Returns an action.  You can use any method you want and search to any depth you want.
           Just remember that the mini-contest is timed, so you have to trade off speed and computation.
@@ -567,13 +469,8 @@ class ContestAgent(AlphaBetaAgent):
           Ghosts don't behave randomly anymore, but they aren't perfect either -- they'll usually
           just make a beeline straight towards Pacman (or away from him if they're scared!)
         """
-        """*** YOUR CODE HERE ***"""
+        "*** YOUR CODE HERE ***"
+        # util.raiseNotDefined()
 
-        # check if a new game has started
-        if gameState.getScore() == 0 and gameState.getNumFood() == 69:
-            # update q6_count
-            global q6_count
-            q6_count += 1
 
-        # call parent class (a-b search agent) getAction Function
-        return super(ContestAgent, self).getAction(gameState)
+        
