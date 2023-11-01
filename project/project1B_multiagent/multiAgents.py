@@ -394,6 +394,22 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             
         return act
 
+coefficients_effector = 0
+
+def generate_disturb(x):
+    disturb = [[1, 1, 1, 1],
+               [0.046, 0.344, 2.24, 4.51],
+               [0.046, 0.344, 2.25, 4.51],
+               [0.5755, 0.575, 0.156, 5.2626],
+               [0.645, 0.5554, 0.492, 3.383],
+               [0.0954, 0.4385, 1, 2.367],
+               [0.029, 1.4877, 1.96, 3.423],
+               [0.7181, 0.393, 7.352, 3.1434],
+               [0.4, 0.4844, 2.754, 4.465],
+               [0.4, 0.4225, 0.312, 2.0736],
+               [0.2, 0.93, 0.51, 1.51]]
+    return disturb[x]
+
 def betterEvaluationFunction(currentGameState: GameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
@@ -411,17 +427,25 @@ def betterEvaluationFunction(currentGameState: GameState):
 
     after testing, take the capsules' value to be 25
 
-    if the ghost is too far from the pacman(dis > 3), just ignore it
+    if the ghost is too far from the pacman, just ignore it
+
+    and some disturn to the evaluation function, to chase better score on q6
+
+    - if there exists a capsule, try to eat it first
+    - if there is no capsule, eat the food
+    - if there is a scared ghost, try to catch it
+    - stay away the ghost until they are close enough
 
     """
     "*** YOUR CODE HERE ***"
     # util.raiseNotDefined()
 
+    disturb = generate_disturb(coefficients_effector)
 
-    food_score = 10
-    capsules_score = 25
-    ghost_score = -500
-    scared_ghost_score = 100 # try to catch the scared ghost
+    capsules_score = 25 * disturb[0]
+    food_score = 10  * disturb[1]
+    scared_ghost_score = 100  * disturb[2] # try to catch the scared ghost
+    ghost_score = -500 * disturb[3]
 
     # val = 0
     val = currentGameState.getScore()
@@ -431,26 +455,33 @@ def betterEvaluationFunction(currentGameState: GameState):
     capsule_pos = currentGameState.getCapsules()
 
     dis_to_food = [manhattanDistance(pacman_pos, food) for food in food_pos]
-    if dis_to_food != []:
-        val += food_score / min(dis_to_food)
-    
     dis_to_capsule = [manhattanDistance(pacman_pos, capsule) for capsule in capsule_pos]
-    if dis_to_capsule != []:
-        # if pacman_pos in capsule_pos:
-            # val += capsules_score
-        # else:
-        val += capsules_score / min(dis_to_capsule)
     
+    if dis_to_capsule != []: # try to eat the capsule first
+        val += capsules_score / min(dis_to_capsule)
+    else: # no capsule, eat the food
+        if dis_to_food != []:
+            val += food_score / min(dis_to_food)
+    
+    bonus = 0 
     # dis_to_ghost = [manhattanDistance(pacman_pos, ghost) for ghost in ghost_pos]
     for ghost in currentGameState.getGhostStates():
         dis_to_ghost = manhattanDistance(pacman_pos, ghost.getPosition())
         if ghost.scaredTimer > 0:
-            val += scared_ghost_score / dis_to_ghost
+            if coefficients_effector == 0:
+                val += scared_ghost_score / dis_to_ghost
+            else:
+                if dis_to_ghost < ghost.scaredTimer:
+                    bonus = max(bonus, scared_ghost_score / dis_to_ghost)
         else:
-            if dis_to_ghost <= 2: # ignore the far ghost
-                val += ghost_score
+            if coefficients_effector == 0:
+                if dis_to_ghost <= 2: # ignore the far ghost
+                    val += ghost_score
+            else:
+                if dis_to_ghost == 0: # ignore the far ghost
+                    val = ghost_score
 
-    return val
+    return val + bonus
 
 
 # Abbreviation
@@ -460,6 +491,61 @@ class ContestAgent(MultiAgentSearchAgent):
     """
       Your agent for the mini-contest
     """
+    # evaluationFunction = betterEvaluationFunction
+    # evaluationFunction = util.lookup('betterEvaluationFunction', globals())
+    def __init__(self, evalFn='better', depth='3'):
+        super().__init__(evalFn, depth)
+        self.inf = 1926081719491001
+
+    # evaluationFunction = better
+    # print(evaluationFunction)
+
+    # pacman max_node
+    def max_node(self, gameState : GameState, depth, ghost_num, alpha, beta):
+        max_val = -self.inf
+        # print(self.depth)
+
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            # print(self.evaluationFunction)
+            return self.evaluationFunction(gameState)
+            # return better(gameState)
+
+        # action for pacman, agent_id = 0
+        for action in gameState.getLegalActions(0):
+            next_state = gameState.getNextState(0, action)
+            max_val = max(max_val, self.min_node(next_state, depth, 1, ghost_num, alpha, beta)) # the ghost's id start from 1
+
+            # alpha-beta pruning
+            if max_val > beta:
+                return max_val
+            alpha = max(alpha, max_val)
+
+        return max_val
+    
+    # adversarial(ghost) min_node
+    def min_node(self, gameState : GameState, depth, agent_id, ghost_num, alpha, beta):
+        min_val = self.inf
+
+        if gameState.isWin() or gameState.isLose() or depth == self.depth:
+            # print(self.evaluationFunction)
+            return self.evaluationFunction(gameState)
+            # return better(gameState)
+
+        # action for ghost, agent_num in [1, ghost_num]
+        for action in gameState.getLegalActions(agent_id):
+            next_state = gameState.getNextState(agent_id, action)
+
+            if agent_id == ghost_num: # last ghost, go to the next depth for pacman
+                min_val = min(min_val, self.max_node(next_state, depth + 1, ghost_num, alpha, beta))
+            else: # consider the next ghost
+                min_val = min(min_val, self.min_node(next_state, depth, agent_id + 1, ghost_num, alpha, beta))
+            
+            # alpha-beta purning
+            if min_val < alpha:
+                return min_val
+            beta = min(beta, min_val)
+        return min_val
+
 
     def getAction(self, gameState: GameState):
         """
@@ -472,5 +558,32 @@ class ContestAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
         # util.raiseNotDefined()
 
+        if gameState.getScore() == 0:
+            # update coefficients_effector
+            global coefficients_effector
+            coefficients_effector += 1
+            # print(coefficients_effector)
 
+        ghost_num = gameState.getNumAgents() - 1 # 0 for pacman, [1, ghost_num] for ghosts
+        # print("ghost_num = ", ghost_num)
+
+        # the nodes connected to the root(pacman) are min_nodes
+        # pacman is the root, all the ghosts are the first depth
         
+        act = None
+
+        alpha = -self.inf
+        beta = self.inf
+
+        for action in gameState.getLegalActions(0):
+            next_state = gameState.getNextState(0, action)
+            val = self.min_node(next_state, 0, 1, ghost_num, alpha, beta)
+            
+            # not prune on equality !!
+            if val > beta:
+                return act
+            if val > alpha:
+                act = action
+                alpha = val
+            
+        return act
