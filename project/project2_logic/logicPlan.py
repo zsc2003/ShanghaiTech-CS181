@@ -53,9 +53,31 @@ def sentence1() -> Expr:
     (not A) or (not B) or C
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
-    "*** END YOUR CODE HERE ***"
+    # util.raiseNotDefined()
 
+    A = Expr('A')
+    B = Expr('B')
+    C = Expr('C')
+
+    # A ∧ B → C, and call to_cnf
+    # res = to_cnf((A | B) >> C)
+    # print(res)
+
+    """
+    ~A     : not A
+    A & B  : A and B
+    A | B  : A or  B
+    A >> B : A ->  B
+    A % B  : A <-> B
+    """
+
+    A_or_B = A | B # A or B
+    second = (~A) % ( (~B) | C) # (not A) if and only if ((not B) or C)
+    # third = ((~A) | (~B)) | C # (not A) or (not B) or C
+    third = disjoin([(~A), (~B), C]) # (not A) or (not B) or C
+    return conjoin([A_or_B, second, third])
+
+    "*** END YOUR CODE HERE ***"
 
 def sentence2() -> Expr:
     """Returns a Expr instance that encodes that the following expressions are all true.
@@ -66,9 +88,29 @@ def sentence2() -> Expr:
     (not D) implies C
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
-    "*** END YOUR CODE HERE ***"
+    # util.raiseNotDefined()
 
+    A = Expr('A')
+    B = Expr('B')
+    C = Expr('C')
+    D = Expr('D')
+
+    """
+    ~A     : not A
+    A & B  : A and B
+    A | B  : A or  B
+    A >> B : A ->  B
+    A % B  : A <-> B
+    """
+
+    first = C % (B | D) # C if and only if (B or D)
+    second = A >> ((~B) & (~D)) # A implies ((not B) and (not D))
+    third = (~(B & (~C))) >> A # (not (B and (not C))) implies A
+    fourth = (~D) >> C # (not D) implies C
+
+    return conjoin([first, second, third, fourth])
+
+    "*** END YOUR CODE HERE ***"
 
 def sentence3() -> Expr:
     """Using the symbols PacmanAlive_1 PacmanAlive_0, PacmanBorn_0, and PacmanKilled_0,
@@ -84,7 +126,31 @@ def sentence3() -> Expr:
     (Project update: for this question only, [0] and _t are both acceptable.)
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    PacmanAlive_0 = PropSymbolExpr('PacmanAlive_0')
+    PacmanAlive_1 = PropSymbolExpr('PacmanAlive_1')
+    PacmanBorn_0 = PropSymbolExpr('PacmanBorn_0')
+    PacmanKilled_0 = PropSymbolExpr('PacmanKilled_0')
+
+    """
+    ~A     : not A
+    A & B  : A and B
+    A | B  : A or  B
+    A >> B : A ->  B
+    A % B  : A <-> B
+    """
+
+    # Pacman is alive at time 1 if and only if Pacman was alive at time 0 and it was not killed at time 0 
+    # or it was not alive at time 0 and it was born at time 0.
+    pacman_alive = PacmanAlive_1 % ((PacmanAlive_0 & (~PacmanKilled_0)) | ((~PacmanAlive_0) & PacmanBorn_0))
+    
+    # Pacman cannot both be alive at time 0 and be born at time 0.
+    illegal = ~(PacmanAlive_0 & PacmanBorn_0)
+
+    # Pacman is born at time 0
+    return conjoin([pacman_alive, illegal, PacmanBorn_0])
+
     "*** END YOUR CODE HERE ***"
 
 def findModel(sentence: Expr) -> Dict[Expr, bool]:
@@ -95,12 +161,14 @@ def findModel(sentence: Expr) -> Dict[Expr, bool]:
     return pycoSAT(cnf_sentence)
 
 def findModelCheck() -> Dict[Any, bool]:
-    """Returns the result of findModel(Expr('a')) if lower cased expressions were allowed.
+    """
+    Returns the result of findModel(Expr('a')) if lower cased expressions were allowed.
     You should not use findModel or Expr in this method.
     This can be solved with a one-line return statement.
     """
     class dummyClass:
-        """dummy('A') has representation A, unlike a string 'A' that has repr 'A'.
+        """
+        dummy('A') has representation A, unlike a string 'A' that has repr 'A'.
         Of note: Expr('Name') has representation Name, not 'Name'.
         """
         def __init__(self, variable_name: str = 'A'):
@@ -109,22 +177,46 @@ def findModelCheck() -> Dict[Any, bool]:
         def __repr__(self):
             return self.variable_name
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    """
+    >>> from logicPlan import *
+    >>> findModel(sentence1())
+    {A: False, B: True, C: True}
+    >>> findModel(sentence2())
+    False
+    >>> findModel(sentence3())
+    {PacmanKilled_0: False, PacmanAlive_1: True, PacmanAlive_0: False, PacmanBorn_0: True}
+    """
+    return findModel(Expr('a'))
+
     "*** END YOUR CODE HERE ***"
 
 def entails(premise: Expr, conclusion: Expr) -> bool:
-    """Returns True if the premise entails the conclusion and False otherwise.
+    """
+    Returns True if the premise entails the conclusion and False otherwise.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    # premise entails conclusion
+    # premise & ~conclusion is unsatisfiable
+    if findModel(conjoin([premise, ~conclusion])) == False:
+        return True
+    return False
+
     "*** END YOUR CODE HERE ***"
 
 def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> bool:
-    """Returns True if the (not inverse_statement) is True given assignments and False otherwise.
+    """
+    Returns True if the (not inverse_statement) is True given assignments and False otherwise.
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    not_inverse_statement = ~inverse_statement
+    
+
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
