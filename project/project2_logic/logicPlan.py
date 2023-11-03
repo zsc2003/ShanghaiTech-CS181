@@ -509,7 +509,39 @@ def positionLogicPlan(problem) -> List:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    # Add to KB: Initial knowledge: Pacman's initial location at timestep 0
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+
+    # Autograder will not test on layouts requiring ≥ 50 timesteps
+    for t in range(50):
+        # print time step; this is to see that the code is running and how far it is.
+        print('time step : ', t)
+
+        # Add to KB: Initial knowledge: Pacman can only be at exactlyOne of the locations in non_wall_coords at timestep t. 
+        # This is similar to pacphysicsAxioms, but don't use that method
+        # since we are using non_wall_coors when generating the list of possible locations in the first place (and walls_grid later).
+        KB.append(exactlyOne([PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_wall_coords]))
+
+        # Is there a satisfying assignment for the variables given the knowledge base so far?
+        # Use findModel and pass in the Goal Assertion and KB
+        model = findModel(conjoin(KB + [PropSymbolExpr(pacman_str, xg, yg, time=t)]))
+        # print(type(model))
+        if model:
+            # if there is, return a sequence of actions from start to goal using extractActionSequence
+            # Here, Goal Assertion is the expression asserting that Pacman is at the goal at timestep t.
+
+            return extractActionSequence(model, actions)
+
+        # Add to KB: Pacman takes exactly one action per timestep
+        KB.append(exactlyOne([PropSymbolExpr(direction, time=t) for direction in actions]))
+
+        # Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) 
+        # for all possible pacman positions in non_wall_coords.
+        for x, y in non_wall_coords:
+            KB.append(pacmanSuccessorAxiomSingle(x, y, t + 1, walls_grid))
+
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
