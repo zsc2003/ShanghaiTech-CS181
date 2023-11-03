@@ -72,10 +72,10 @@ def sentence1() -> Expr:
     """
 
     A_or_B = A | B # A or B
-    second = (~A) % ( (~B) | C) # (not A) if and only if ((not B) or C)
+    condition_2 = (~A) % ( (~B) | C) # (not A) if and only if ((not B) or C)
     # third = ((~A) | (~B)) | C # (not A) or (not B) or C
-    third = disjoin([(~A), (~B), C]) # (not A) or (not B) or C
-    return conjoin([A_or_B, second, third])
+    condition_3 = disjoin([(~A), (~B), C]) # (not A) or (not B) or C
+    return conjoin([A_or_B, condition_2, condition_3])
 
     "*** END YOUR CODE HERE ***"
 
@@ -103,12 +103,12 @@ def sentence2() -> Expr:
     A % B  : A <-> B
     """
 
-    first = C % (B | D) # C if and only if (B or D)
-    second = A >> ((~B) & (~D)) # A implies ((not B) and (not D))
-    third = (~(B & (~C))) >> A # (not (B and (not C))) implies A
-    fourth = (~D) >> C # (not D) implies C
+    condition_1 = C % (B | D) # C if and only if (B or D)
+    condition_2 = A >> ((~B) & (~D)) # A implies ((not B) and (not D))
+    condition_3 = (~(B & (~C))) >> A # (not (B and (not C))) implies A
+    condition_4 = (~D) >> C # (not D) implies C
 
-    return conjoin([first, second, third, fourth])
+    return conjoin([condition_1, condition_2, condition_3, condition_4])
 
     "*** END YOUR CODE HERE ***"
 
@@ -188,7 +188,7 @@ def findModelCheck() -> Dict[Any, bool]:
     >>> findModel(sentence3())
     {PacmanKilled_0: False, PacmanAlive_1: True, PacmanAlive_0: False, PacmanBorn_0: True}
     """
-    return findModel(Expr('a'))
+    return {dummyClass('a') : True}
 
     "*** END YOUR CODE HERE ***"
 
@@ -201,9 +201,7 @@ def entails(premise: Expr, conclusion: Expr) -> bool:
 
     # premise entails conclusion
     # premise & ~conclusion is unsatisfiable
-    if findModel(conjoin([premise, ~conclusion])) == False:
-        return True
-    return False
+    return not findModel(conjoin([premise, ~conclusion]))
 
     "*** END YOUR CODE HERE ***"
 
@@ -214,8 +212,9 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     """
     "*** BEGIN YOUR CODE HERE ***"
     # util.raiseNotDefined()
+
     not_inverse_statement = ~inverse_statement
-    
+    return pl_true(not_inverse_statement, assignments)
 
     "*** END YOUR CODE HERE ***"
 
