@@ -570,7 +570,63 @@ def foodLogicPlan(problem) -> List:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    # Initialize Food[x,y]_t variables with the code PropSymbolExpr(food_str, x, y, time=t), 
+    # where each variable is true if and only if there is a food at (x, y) at time t
+    
+
+
+
+
+
+
+
+    #  TODO
+
+
+
+
+
+
+    time = -1
+    while True:
+        # print time step; this is to see that the code is running and how far it is.
+        time += 1
+        print('time step : ', time)
+
+        # Initialize Food[x,y]_t variables with the code PropSymbolExpr(food_str, x, y, time=t), 
+        # where each variable is true if and only if there is a food at (x, y) at time t
+        for x, y in food:
+            KB.append(PropSymbolExpr(food_str, x, y, time=time))
+
+        # Change the goal assertion: Your goal assertion sentence must be true if and only if all of the food have been eaten.
+        # This happens when all Food[x,y]_t are false
+        KB.append(conjoin([~PropSymbolExpr(food_str, x, y, time=time) for x, y in food]))
+
+        # Add a food successor axiom
+        # the relation between Food[x,y]_t+1 and Food[x,y]_t and Pacman[x,y]_t
+        # Food[x,y]_t+1 <==> (Food[x,y]_t & ~Pacman[x,y]_t)
+        for x, y in non_wall_coords:
+            KB.append(PropSymbolExpr(food_str, x, y, time=time + 1) % 
+                      (PropSymbolExpr(food_str, x, y, time=time) & ~PropSymbolExpr(pacman_str, x, y, time=time)))
+
+        # Add a pacman successor axiom
+        # the relation between Pacman[x,y]_t+1 and Pacman[x,y]_t and Action[x,y]_t
+        # Pacman[x,y]_t+1 <==> (Pacman[x,y]_t & Action[x,y]_t)
+        for x, y in non_wall_coords:
+            KB.append(PropSymbolExpr(pacman_str, x, y, time=time + 1) % 
+                      (PropSymbolExpr(pacman_str, x, y, time=time) & PropSymbolExpr('South', time=time)))
+
+
+
+
+
+        # returns a sequence of action strings for the Pacman agent to execute
+        model = findModel(conjoin(KB))
+        if model:
+            return extractActionSequence(model, actions)
+        
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
