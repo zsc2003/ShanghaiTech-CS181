@@ -241,9 +241,12 @@ def atLeastOne(literals: List[Expr]) -> Expr:
     True
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
-    "*** END YOUR CODE HERE ***"
+    # util.raiseNotDefined()
+    
+    # at least one expression in the input list is true
+    return disjoin(literals)
 
+    "*** END YOUR CODE HERE ***"
 
 def atMostOne(literals: List[Expr]) -> Expr:
     """
@@ -253,9 +256,17 @@ def atMostOne(literals: List[Expr]) -> Expr:
     itertools.combinations may be useful here.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
-    "*** END YOUR CODE HERE ***"
+    # util.raiseNotDefined()
 
+    # at most one is true, your resulting CNF expression should be a conjunction of (n,2) clauses
+    """
+    for combine in itertools.combinations(literals, 2):
+        print(type(combine))
+        print(combine)
+    """
+    clauses = [((~A) | (~B)) for (A, B) in itertools.combinations(literals, 2)]
+    return conjoin(clauses)
+    "*** END YOUR CODE HERE ***"
 
 def exactlyOne(literals: List[Expr]) -> Expr:
     """
@@ -264,7 +275,12 @@ def exactlyOne(literals: List[Expr]) -> Expr:
     the expressions in the list is true.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    # if exactly one expression in the input list is true
+    # print(literals)
+    return conjoin([atLeastOne(literals), atMostOne(literals)])
+
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
@@ -297,7 +313,18 @@ def pacmanSuccessorAxiomSingle(x: int, y: int, time: int, walls_grid: List[List[
         return None
     
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    """
+    ~A     : not A
+    A & B  : A and B
+    A | B  : A or  B
+    A >> B : A ->  B
+    A % B  : A <-> B
+    """
+
+    return conjoin([PropSymbolExpr(pacman_str, x, y, time=now) % disjoin(possible_causes)])
+    
     "*** END YOUR CODE HERE ***"
 
 
@@ -368,7 +395,38 @@ def pacphysicsAxioms(t: int, all_coords: List[Tuple], non_outer_wall_coords: Lis
     pacphysics_sentences = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    
+    """
+    ~A     : not A
+    A & B  : A and B
+    A | B  : A or  B
+    A >> B : A ->  B
+    A % B  : A <-> B
+    """
+
+    # for all (x, y) in all_coords:
+    # If a wall is at (x, y) --> Pacman is not at (x, y)
+    for x, y in all_coords:
+        pacphysics_sentences.append(PropSymbolExpr(wall_str, x, y) >> (~PropSymbolExpr(pacman_str, x, y, time=t)))
+
+    # Pacman is at exactly one of the squares at timestep t.
+    pacphysics_sentences.append(exactlyOne([PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_outer_wall_coords]))
+
+    # Pacman takes exactly one action at timestep t.
+    pacphysics_sentences.append(exactlyOne([PropSymbolExpr(direction, time=t) for direction in DIRECTIONS]))
+
+    # Results of calling sensorModel(...), unless None
+    if sensorModel is not None:
+        pacphysics_sentences.append(sensorModel(t, non_outer_wall_coords))
+    
+    # Results of calling successorAxioms(...), describing how Pacman can end in various
+    # locations on this time step. Consider edge cases. Don't call if None
+    if successorAxioms is not None:
+        if t > 0:
+            pacphysics_sentences.append(successorAxioms(t, walls_grid, non_outer_wall_coords))
+
+
     "*** END YOUR CODE HERE ***"
 
     return conjoin(pacphysics_sentences)
@@ -402,7 +460,29 @@ def checkLocationSatisfiability(x1_y1: Tuple[int, int], x0_y0: Tuple[int, int], 
     KB.append(conjoin(map_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    # pacphysics_axioms(...) with the appropriate timesteps. There is no sensorModel because we know everything about the world.
+    # Where needed, use allLegalSuccessorAxioms for transitions since this is for regular Pacman transition rules
+    KB.append(pacphysicsAxioms(1, all_coords, non_outer_wall_coords, walls_grid, None, allLegalSuccessorAxioms))
+    KB.append(pacphysicsAxioms(0, all_coords, non_outer_wall_coords, walls_grid, None, None))
+
+    # Pacman's current location (x0, y0)
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+
+    # Pacman takes action0
+    KB.append(PropSymbolExpr(action0, time=0))
+
+    # Pacman takes action1
+    KB.append(PropSymbolExpr(action1, time=1))
+
+    # Query the SAT solver with findModel for two models described earlier.
+    # The queries should be different; for a reminder on how to make queries see entails
+    model1 = findModel(conjoin(KB + [PropSymbolExpr(pacman_str, x1, y1, time=1)]))
+    model2 = findModel(conjoin(KB + [~PropSymbolExpr(pacman_str, x1, y1, time=1)]))
+
+    return model1, model2
+
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
