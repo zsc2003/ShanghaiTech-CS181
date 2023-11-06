@@ -632,9 +632,53 @@ def localization(problem, agent) -> Generator:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    # print('walls_list: ', walls_list)
+    # print('all_coords: ', all_coords)
+    # print('non_outer_wall_coords: ', non_outer_wall_coords)
+
+    # Add to KB: where the walls are (walls_list) and aren't (not in walls_list).
+    KB.append(conjoin([PropSymbolExpr(wall_str, x, y) for x, y in walls_list]))
+    KB.append(conjoin([~PropSymbolExpr(wall_str, x, y) for x, y in non_outer_wall_coords if (x, y) not in walls_list]))
 
     for t in range(agent.num_timesteps):
+
+        # Add pacphysics, action, and percept information to KB.
+        # in the helper function's intro...
+
+        # Add to KB: pacphysics_axioms(...), which you wrote in q3.
+        # Use sensorAxioms and allLegalSuccessorAxioms for localization and mapping,
+        # and SLAMSensorAxioms and SLAMSuccessorAxioms for SLAM only.
+        KB.append(pacphysicsAxioms(t, all_coords, non_outer_wall_coords, walls_grid, sensorAxioms, allLegalSuccessorAxioms))
+
+        # Add to KB: Pacman takes action prescribed by agent.actions[t]
+        KB.append(PropSymbolExpr(agent.actions[t], time=t))
+
+        # Get the percepts by calling agent.getPercepts() and pass the percepts to fourBitPerceptRules(...)
+        # for localization and mapping, or numAdjWallsPerceptRules(...) for SLAM.
+        # Add the resulting percept_rules to KB
+        percepts = agent.getPercepts()
+        percept_rules = fourBitPerceptRules(t, percepts)
+        KB.append(percept_rules)
+
+        # ====================================================================== 
+        # Find possible pacman locations with updated KB.
+        # in the helper function's intro...
+        
+        possible_locations = []
+        # iterate over non_outer_wall_coords
+        for x, y in non_outer_wall_coords:
+            # Can we prove whether Pacman is at (x, y)?
+            # Can we prove whether Pacman is not at (x, y)? Use entails and the KB
+            pacman_not_at_x_y = entails(conjoin(KB), ~PropSymbolExpr(pacman_str, x, y, time=t))
+            
+            # not (not at (x,y)) -> possible at (x,y)
+            if not pacman_not_at_x_y:
+                possible_locations.append((x, y))
+
+        # Call agent.moveToNextState(action_t) on the current agent action at timestep t.
+        agent.moveToNextState(agent.actions[t])
+
         "*** END YOUR CODE HERE ***"
         yield possible_locations
 
