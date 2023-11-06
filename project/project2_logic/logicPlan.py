@@ -572,61 +572,48 @@ def foodLogicPlan(problem) -> List:
     "*** BEGIN YOUR CODE HERE ***"
     # util.raiseNotDefined()
 
+    # Add to KB: Initial knowledge: Pacman's initial location at timestep 0
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+
     # Initialize Food[x,y]_t variables with the code PropSymbolExpr(food_str, x, y, time=t), 
     # where each variable is true if and only if there is a food at (x, y) at time t
-    
+    for x, y in food:
+        KB.append(PropSymbolExpr(food_str, x, y, time=0))
 
-
-
-
-
-
-
-    #  TODO
-
-
-
-
-
-
-    time = -1
-    while True:
+    # Autograder will not test on layouts requiring ≥ 50 timesteps
+    for t in range(50):
         # print time step; this is to see that the code is running and how far it is.
-        time += 1
-        print('time step : ', time)
+        print('time step : ', t)
 
-        # Initialize Food[x,y]_t variables with the code PropSymbolExpr(food_str, x, y, time=t), 
-        # where each variable is true if and only if there is a food at (x, y) at time t
-        for x, y in food:
-            KB.append(PropSymbolExpr(food_str, x, y, time=time))
+        # Add to KB: Initial knowledge: Pacman can only be at exactlyOne of the locations in non_wall_coords at timestep t. 
+        # This is similar to pacphysicsAxioms, but don't use that method
+        # since we are using non_wall_coors when generating the list of possible locations in the first place (and walls_grid later).
+        KB.append(exactlyOne([PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_wall_coords]))
 
         # Change the goal assertion: Your goal assertion sentence must be true if and only if all of the food have been eaten.
         # This happens when all Food[x,y]_t are false
-        KB.append(conjoin([~PropSymbolExpr(food_str, x, y, time=time) for x, y in food]))
-
-        # Add a food successor axiom
-        # the relation between Food[x,y]_t+1 and Food[x,y]_t and Pacman[x,y]_t
-        # Food[x,y]_t+1 <==> (Food[x,y]_t & ~Pacman[x,y]_t)
-        for x, y in non_wall_coords:
-            KB.append(PropSymbolExpr(food_str, x, y, time=time + 1) % 
-                      (PropSymbolExpr(food_str, x, y, time=time) & ~PropSymbolExpr(pacman_str, x, y, time=time)))
-
-        # Add a pacman successor axiom
-        # the relation between Pacman[x,y]_t+1 and Pacman[x,y]_t and Action[x,y]_t
-        # Pacman[x,y]_t+1 <==> (Pacman[x,y]_t & Action[x,y]_t)
-        for x, y in non_wall_coords:
-            KB.append(PropSymbolExpr(pacman_str, x, y, time=time + 1) % 
-                      (PropSymbolExpr(pacman_str, x, y, time=time) & PropSymbolExpr('South', time=time)))
-
-
-
-
+        food_t = [~PropSymbolExpr(food_str, x, y, time=t) for x, y in food]
 
         # returns a sequence of action strings for the Pacman agent to execute
-        model = findModel(conjoin(KB))
+        model = findModel(conjoin(KB + food_t))
         if model:
             return extractActionSequence(model, actions)
         
+        # Add to KB: Pacman takes exactly one action per timestep
+        KB.append(exactlyOne([PropSymbolExpr(direction, time=t) for direction in actions]))
+
+        # Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) 
+        # for all possible pacman positions in non_wall_coords.
+        for x, y in non_wall_coords:
+            KB.append(pacmanSuccessorAxiomSingle(x, y, t + 1, walls))
+
+        # Add a food successor axiom: What is the relation between Food[x,y]_t+1 and Food[x,y]_t and Pacman[x,y]_t? 
+        # The food successor axiom should only involve these three variables, for any given (x, y) and t. 
+        # Food[x,y]_t+1 <=> (Food[x,y]_t & ~Pacman[x,y]_t)
+        for x, y in food:
+            KB.append(PropSymbolExpr(food_str, x, y, time=t + 1) % 
+                      (PropSymbolExpr(food_str, x, y, time=t) & ~PropSymbolExpr(pacman_str, x, y, time=t)))
+       
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
