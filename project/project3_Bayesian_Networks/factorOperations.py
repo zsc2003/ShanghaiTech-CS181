@@ -192,7 +192,33 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # util.raiseNotDefined()
+
+        # You should calculate the set of unconditioned variables and conditioned 
+        # variables for the factor obtained by eliminating the variable
+        # eliminationVariable.
+        unconditioned_Vars = factor.unconditionedVariables()
+        unconditioned_Vars.remove(eliminationVariable)
+
+        conditioned_Vars = factor.conditionedVariables()
+
+        # Your eliminate should return a new Factor
+        # Remember that Factors store the variableDomainsDict of the original BayesNet,
+        # and not only the unconditioned and conditioned variables that they use.
+        # As a result, the returned Factor should have the same variableDomainsDict as the input Factor.
+        eliminated_factor = Factor(unconditioned_Vars, conditioned_Vars, factor.variableDomainsDict())
+
+        # Return a new factor where all of the rows mentioning
+        # eliminationVariable are summed with rows that match
+        # assignments on the other variables.
+        for assignment in eliminated_factor.getAllPossibleAssignmentDicts():
+            probability = 0
+            for value in factor.variableDomainsDict()[eliminationVariable]:
+                assignment[eliminationVariable] = value
+                probability += factor.getProbability(assignment)
+            eliminated_factor.setProbability(assignment, probability)
+        
+        return eliminated_factor
         "*** END YOUR CODE HERE ***"
 
     return eliminate
