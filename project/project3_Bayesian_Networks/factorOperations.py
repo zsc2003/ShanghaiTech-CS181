@@ -103,7 +103,46 @@ def joinFactors(factors: List[Factor]):
 
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    
+    # For a general joinFactors operation, which variables are unconditioned in the returned Factor?
+    # Which variables are conditioned?
+    factors_list = list(factors)
+
+    unconditioned_Vars = set()
+    for factor in factors_list:
+        for var in factor.unconditionedVariables():
+            unconditioned_Vars.add(var)
+    
+    conditioned_Vars = set()
+    for factor in factors_list:
+        for var in factor.conditionedVariables():
+            # ValueError: unconditionedVariables and conditionedVariables can't have repeated
+            if var not in unconditioned_Vars:
+                conditioned_Vars.add(var)
+
+    # print("unconditioned_Vars: ", unconditioned_Vars)
+    # print("conditioned_Vars: ", conditioned_Vars)
+
+    # Your joinFactors should return a new Factor
+    # Factors store a variableDomainsDict, which maps each variable to a list of values that it can take on (its domain).
+    # A Factor gets its variableDomainsDict from the BayesNet from which it was instantiated.
+    
+    # Factor(inputUnconditionedVariables, inputConditionedVariables, inputVariableDomainsDict)
+    joined_factor = Factor(unconditioned_Vars, conditioned_Vars, factors_list[0].variableDomainsDict())
+
+    # Factor methods that take an assignmentDict as input 
+    # (such as getProbability and setProbability) can handle 
+    # assignmentDicts that assign more variables than are in that factor
+
+
+    for assignment in joined_factor.getAllPossibleAssignmentDicts():
+        probability = 1
+        for factor in factors_list:
+            probability *= factor.getProbability(assignment)
+        joined_factor.setProbability(assignment, probability)
+    
+    return joined_factor
     "*** END YOUR CODE HERE ***"
 
 
