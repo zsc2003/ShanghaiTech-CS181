@@ -99,7 +99,33 @@ def constructBayesNet(gameState: GameState):
     variableDomainsDict = {}
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+
+    # bn.printStarterBayesNet()
+
+    # populate `obsVars` using the procedure above
+    for housePos in gameState.getPossibleHouses():
+        for obsPos in gameState.getHouseWalls(housePos):
+            obsVar = OBS_VAR_TEMPLATE % obsPos
+            obsVars.append(obsVar)
+
+    # populate `edges` with every edge in the Bayes Net (a tuple `(from, to)`)
+    edges = [(X_POS_VAR, FOOD_HOUSE_VAR), (X_POS_VAR, GHOST_HOUSE_VAR), (Y_POS_VAR, FOOD_HOUSE_VAR), (Y_POS_VAR, GHOST_HOUSE_VAR)]
+    
+    for house_var in HOUSE_VARS:
+        for obs_var in obsVars:
+            edges.append((house_var, obs_var))
+    
+    # set each `variableDomainsDict[var] = values`, where `values` is the set
+    # of possible assignments to `var`. These should again be set using the
+    # constants defined at the top of this file.
+    variableDomainsDict[X_POS_VAR] = X_POS_VALS
+    variableDomainsDict[Y_POS_VAR] = Y_POS_VALS
+    for house_var in HOUSE_VARS:
+        variableDomainsDict[house_var] = HOUSE_VALS
+    for obs_var in obsVars:
+        variableDomainsDict[obs_var] = OBS_VALS
+
     "*** END YOUR CODE HERE ***"
 
     variables = [X_POS_VAR, Y_POS_VAR] + HOUSE_VARS + obsVars
@@ -131,7 +157,12 @@ def fillYCPT(bayesNet: BayesNet, gameState: GameState):
 
     yFactor = bn.Factor([Y_POS_VAR], [], bayesNet.variableDomainsDict())
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # util.raiseNotDefined()
+    yFactor.setProbability({Y_POS_VAR: BOTH_TOP_VAL}, PROB_BOTH_TOP)
+    yFactor.setProbability({Y_POS_VAR: BOTH_BOTTOM_VAL}, PROB_BOTH_BOTTOM)
+    yFactor.setProbability({Y_POS_VAR: LEFT_TOP_VAL}, PROB_ONLY_LEFT_TOP)
+    yFactor.setProbability({Y_POS_VAR: LEFT_BOTTOM_VAL}, PROB_ONLY_LEFT_BOTTOM)
+
     "*** END YOUR CODE HERE ***"
     bayesNet.setCPT(Y_POS_VAR, yFactor)
 
