@@ -225,7 +225,6 @@ def eliminateWithCallTracking(callTrackingList=None):
 
 eliminate = eliminateWithCallTracking()
 
-
 def normalize(factor: Factor):
     """
     Question 5: Your normalize implementation 
@@ -274,6 +273,37 @@ def normalize(factor: Factor):
                             str(factor))
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
-    "*** END YOUR CODE HERE ***"
+    # util.raiseNotDefined()
+    
+    # The set of conditioned variables for the normalized factor consists 
+    # of the input factor's conditioned variables as well as any of the 
+    # input factor's unconditioned variables with 'exactly one' entry in their domain.
+    conditioned_Vars = factor.conditionedVariables()
+    unconditioned_Vars = set()
+    for var in factor.unconditionedVariables():
+        if len(factor.variableDomainsDict()[var]) == 1:
+            conditioned_Vars.add(var)
+    for var in factor.unconditionedVariables():
+        if var not in conditioned_Vars:
+            unconditioned_Vars.add(var)
 
+    # Remember that Factors store the variableDomainsDict of the original BayesNet,
+    # and not only the unconditioned and conditioned variables that they use.
+    # As a result, the returned Factor should have the same variableDomainsDict as the input Factor.
+    normalized_factor = Factor(unconditioned_Vars, conditioned_Vars, factor.variableDomainsDict())
+
+    # scale all of the entries in the Factor such that the sum of the entries in the Factor is 1.
+    # If the sum of probabilities in the input factor is 0, you should return None
+    sum = 0
+    for assignment in factor.getAllPossibleAssignmentDicts():
+        sum += factor.getProbability(assignment)
+    
+    if sum == 0:
+        return None
+
+    for assignment in factor.getAllPossibleAssignmentDicts():
+        normalized_factor.setProbability(assignment, factor.getProbability(assignment) / sum)
+    
+    return normalized_factor
+
+    "*** END YOUR CODE HERE ***"
