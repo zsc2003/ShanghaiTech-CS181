@@ -133,19 +133,28 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
         "*** YOUR CODE HERE ***"
         # util.raiseNotDefined()
 
+        # BayesNet.getAllCPTsWithEvidence will return all the Conditional Probability Tables even if 
+        # an empty dict (or None) is passed in for evidenceDict. 
+        # In this case it will not specialize any variable domains in the CPTs.
+        factor = bayesNet.getAllCPTsWithEvidence(evidenceDict)
 
+        # The algorithm should iterate over hidden variables in elimination order, performing joining over and eliminating that variable, until the only the query and evidence variables remain.
+        for hidden_var in eliminationOrder:
 
+            # You need to use joinFactorsByVariable to join all of the factors that contain a variable in order for the autograder to 
+            # recognize that you performed the correct interleaving of joins and eliminates.
+            factor, joined_var = joinFactorsByVariable(factor, hidden_var)
 
-
-
-
-        
-
-
-
+            # You will need to take care of the special case where a factor you have joined only has one unconditioned variable
+            # (the docstring specifies what to do in greater detail)
+            if len(joined_var.unconditionedVariables()) > 1:
+                factor.append(eliminate(joined_var, hidden_var))
+            
+        # The sum of the probabilities in your output factor should sum to 1
+        factor = normalize(joinFactors(factor))
+        return factor
 
         "*** END YOUR CODE HERE ***"
-
 
     return inferenceByVariableElimination
 
