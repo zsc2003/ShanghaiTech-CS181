@@ -294,9 +294,30 @@ def getMostLikelyFoodHousePosition(evidence: Dict, bayesNet: BayesNet, eliminati
     (This should be a very short method.)
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
-    "*** END YOUR CODE HERE ***"
+    # util.raiseNotDefined()
 
+    # use the inference.inferenceByVariableElimination
+    # return the most likely position
+    # a dictionary containing a single key-value pair, {FOOD_HOUSE_VAR: best_house_val}
+    # where best_house_val is the most likely position from HOUSE_VALS
+
+    # print("evidence: ", evidence)
+
+    # First, call the variable elimination method you just implemented to obtain p(FoodHouse | everything else).
+    # para: (bayesNet: BayesNet, queryVariables: List[str], evidenceDict: Dict, eliminationOrder: List[str]):
+    factor = inference.inferenceByVariableElimination(bayesNet, [FOOD_HOUSE_VAR], evidence, eliminationOrder)
+
+    # Then, inspect the resulting probability distribution to find the most probable location of the food house
+    max_prob = 0
+    food_house_location = None
+    for assignment in factor.getAllPossibleAssignmentDicts():
+        prob = factor.getProbability(assignment)
+        if prob > max_prob:
+            max_prob = prob
+            food_house_location = assignment[FOOD_HOUSE_VAR]
+
+    return {FOOD_HOUSE_VAR: food_house_location}
+    "*** END YOUR CODE HERE ***"
 
 class BayesAgent(game.Agent):
 
