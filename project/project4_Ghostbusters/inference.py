@@ -348,11 +348,28 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
+
+        # newPosDist is a DiscreteDistribution object
+        beliefs = DiscreteDistribution()
+
+        # for each position p in self.allPositions
+        for oldPos in self.allPositions:
+
+            newPosDist = self.getPositionDistribution(gameState, oldPos)
+
+            # newPosDist[p] is the probability that the ghost is at position p at time t + 1, 
+            # given that the ghost is at position oldPos at time t
+            # P(newPos | oldPos) = \sum P(newPos | oldPos, action) * P(action | oldPos)
+            for newPos in newPosDist.keys():
+                prob = newPosDist[newPos]
+                beliefs[newPos] += prob * self.beliefs[oldPos]
+
+        self.beliefs = beliefs
+        self.beliefs.normalize()
 
     def getBeliefDistribution(self):
         return self.beliefs
-
 
 class ParticleFilter(InferenceModule):
     """
@@ -375,7 +392,11 @@ class ParticleFilter(InferenceModule):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
+
+        self.particles = list(itertools.product(self.legalPositions, repeat=self.numParticles))
+        # print("self.particles = ", self.particles)
+
 
     def observeUpdate(self, observation: Union[int, float, None], gameState: busters.GameState):
         """
@@ -409,9 +430,16 @@ class ParticleFilter(InferenceModule):
         This function should return a normalized distribution.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
 
+        distribution = DiscreteDistribution()
 
+        for particle in self.particles:
+            distribution[particle] += 1
+
+        distribution.normalize()
+        return distribution
+    
 class JointParticleFilter(ParticleFilter):
     """
     JointParticleFilter tracks a joint distribution over tuples of all ghost
