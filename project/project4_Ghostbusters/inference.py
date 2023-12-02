@@ -322,8 +322,20 @@ class ExactInference(InferenceModule):
         position is known.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
 
+        # print("======================")
+        # print(observation)
+        # print("======================")
+
+        # last question : P(noisyDistance | pacmanPosition, ghostPosition) = P(noisyDistance | trueDistance)
+        # self.allPositions is a list of the possible ghost positions
+        pacman_pos = gameState.getPacmanPosition()
+        jail_pos = self.getJailPosition()
+        for ghost_pos in self.allPositions:
+            self.beliefs[ghost_pos] *= self.getObservationProb(observation, pacman_pos, ghost_pos, jail_pos)
+
+        # Beliefs represent the probability that the ghost is at a particular location
         self.beliefs.normalize()
 
     def elapseTime(self, gameState: busters.GameState):
