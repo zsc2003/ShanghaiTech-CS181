@@ -394,7 +394,11 @@ class ParticleFilter(InferenceModule):
         "*** YOUR CODE HERE ***"
         # raiseNotDefined()
 
-        self.particles = list(itertools.product(self.legalPositions, repeat=self.numParticles))
+        repeat_time = self.numParticles // len(self.legalPositions)
+        for pos in self.legalPositions:
+            for t in range(repeat_time):
+                self.particles.append(pos)
+
         # print("self.particles = ", self.particles)
 
 
@@ -411,7 +415,26 @@ class ParticleFilter(InferenceModule):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
+
+        pacman_pos = gameState.getPacmanPosition()
+        jail_pos = self.getJailPosition()
+        beliefs = DiscreteDistribution()
+
+        for particle in self.particles:
+            beliefs[particle] += self.getObservationProb(observation, pacman_pos, particle, jail_pos)
+        
+        # if all particles receive zero weight
+        eps = 1e-7
+        if beliefs.total() <= eps:
+            self.initializeUniformly(gameState)
+        else:
+            beliefs.normalize()
+
+            # resample
+            self.particles = []
+            for _ in range(self.numParticles):
+                self.particles.append(beliefs.sample())
 
     def elapseTime(self, gameState: busters.GameState):
         """
@@ -419,7 +442,14 @@ class ParticleFilter(InferenceModule):
         gameState.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
+        
+        new_particles = []
+        for oldPos in self.particles:
+            newPosDist = self.getPositionDistribution(gameState, oldPos)
+            new_particles.append(newPosDist.sample())
+
+        self.particles = new_particles
 
     def getBeliefDistribution(self):
         """
@@ -465,7 +495,15 @@ class JointParticleFilter(ParticleFilter):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
+
+        # Python itertools package helpful. Specifically, 
+        # look at itertools.product to get an implementation of the Cartesian product
+        self.particles = list(itertools.product(self.legalPositions, repeat=self.numGhosts))
+
+        # the permutations are not returned in a random order
+        # shuffle the list of permutations in order to ensure even placement of particles across the board
+        random.shuffle(self.particles)
 
     def addGhostAgent(self, agent):
         """
@@ -498,7 +536,32 @@ class JointParticleFilter(ParticleFilter):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # raiseNotDefined()
+
+        pacman_pos = gameState.getPacmanPosition()
+        jail_pos = [self.getJailPosition(i) for i in range(self.numGhosts)]
+        beliefs = DiscreteDistribution()
+
+        for particle in self.particles:
+
+            # To loop over all the ghosts
+            prob = 1
+            for i in range(self.numGhosts):
+                prob *= self.getObservationProb(observation[i], pacman_pos, particle[i], jail_pos[i])
+
+            beliefs[particle] += prob
+        
+        # if all particles receive zero weight
+        eps = 1e-7
+        if beliefs.total() <= eps:
+            self.initializeUniformly(gameState)
+        else:
+            beliefs.normalize()
+
+            # resample
+            self.particles = []
+            for _ in range(self.numParticles):
+                self.particles.append(beliefs.sample())
 
     def elapseTime(self, gameState: busters.GameState):
         """
@@ -511,7 +574,15 @@ class JointParticleFilter(ParticleFilter):
 
             # now loop through and update each entry in newParticle...
             "*** YOUR CODE HERE ***"
-            raiseNotDefined()
+            # raiseNotDefined()
+            
+            prevGhostPositions = list(oldParticle)
+            newParticle = []
+            
+            # loop over the ghosts
+            for i in range(self.numGhosts):
+                newPosDist = self.getPositionDistribution(gameState, prevGhostPositions, i, self.ghostAgents[i])
+                newParticle.append(newPosDist.sample())
 
             """*** END YOUR CODE HERE ***"""
             newParticles.append(tuple(newParticle))
