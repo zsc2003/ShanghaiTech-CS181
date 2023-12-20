@@ -23,7 +23,7 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html
 
 import tkinter
-import qlearningAgents
+import m_qlearningAgents
 import time
 import threading
 import sys
@@ -182,7 +182,7 @@ class Application:
           simulation.SimulationEnvironment(self.robotEnvironment,agent)
         actionFn = lambda state: \
           self.robotEnvironment.getPossibleActions(state)
-        self.learner = qlearningAgents.QLearningAgent(actionFn=actionFn)
+        self.learner = m_qlearningAgents.QLearningAgent(actionFn=actionFn)
 
         self.learner.setEpsilon(self.epsilon)
         self.learner.setLearningRate(self.alpha)

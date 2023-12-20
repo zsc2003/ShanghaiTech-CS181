@@ -1,0 +1,187 @@
+# MazeDistance from pa1
+# def mazeDistance(point1, point2, gameState) -> int:
+#     """
+#     Returns the maze distance between any two points, using the search functions
+#     you have already built. The gameState can be any game state -- Pacman's
+#     position in that state is ignored.
+
+#     Example usage: mazeDistance( (2,4), (5,6), gameState)
+
+#     This might be a useful helper function for your ApproximateSearchAgent.
+#     """
+#     x1, y1 = point1
+#     x2, y2 = point2
+#     walls = gameState.getWalls()
+
+#     # do bfs from point1 until first time find the point2
+
+#     from game import Directions
+#     from util import Queue
+#     q = Queue()
+#     visited = set()
+#     q.push((point1, 0))
+#     visited.add(point1)
+#     while not q.isEmpty():
+#         point, distance = q.pop()
+#         if point == point2:
+#             return distance / (walls.width * walls.height)
+#         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+#             x, y = point
+#             dx, dy = Actions.directionToVector(action)
+#             new_point = (int(x + dx), int(y + dy))
+#             if new_point not in visited and not walls[new_point[0]][new_point[1]]:
+#                 visited.add(new_point)
+#                 q.push((new_point, distance + 1))
+#     return 0
+
+"""
+class BetterExtractor(FeatureExtractor):
+    "Your extractor entry goes here.  Add features for capsuleClassic."
+    
+    import pacman
+    def getFeatures(self, state: pacman.GameState , action):
+        features = SimpleExtractor().getFeatures(state, action)
+        # Add more features here
+        "*** YOUR CODE HERE ***"
+
+        # print(type(state))
+        foods = state.getFood()
+        wall = state.getWalls()
+        ghosts = state.getGhostPositions()
+        capsule = state.getCapsules()
+        pacman_pos = state.getPacmanPosition()
+        ghostStates = state.getGhostStates()
+        scaredTimes = [ghost_state.scaredTimer for ghost_state in ghostStates]
+
+        pacman_new_pos = Actions.getSuccessor(pacman_pos, action)
+
+        scared_ghosts = []
+        for ghost_state in ghostStates:
+            if ghost_state.scaredTimer > 0:
+                scared_ghosts.append(ghost_state)
+
+        unscared_ghosts = []
+        for ghost_state in ghostStates:
+            if ghost_state.scaredTimer == 0:
+                unscared_ghosts.append(ghost_state)
+
+        inf = 19260817
+        min_food_distance = inf
+        min_ghost_distance = inf
+        min_capsule_distance = inf
+
+        # min maze distance to food
+        food_list = foods.asList()
+        if len(food_list) > 0:
+            min_food_distance = min([mazeDistance(pacman_new_pos, food_pos, state) for food_pos in food_list])
+
+        # min maze distance to ghost
+        if len(ghosts) > 0:
+            min_ghost_distance = min([mazeDistance(pacman_new_pos, ghost_pos, state) for ghost_pos in ghosts])        
+
+        # min maze distance to capsule
+        if len(capsule) > 0:
+            min_capsule_distance = min([mazeDistance(pacman_new_pos, capsule_pos, state) for capsule_pos in capsule])
+        
+
+
+
+
+
+
+
+
+        def strong_ghost_away(pac_pos) -> float:
+            return sum(pac_pos in Actions.getLegalNeighbors(ghost.getPosition(), wall)
+                       for ghost in unscared_ghosts)
+
+        # strong ghost two steps away
+        def strong_ghost_2_away() -> float:
+            return sum(strong_ghost_away(n) for n in
+                       [(pacman_new_pos[0] + 1, pacman_new_pos[1]), (pacman_new_pos[0] - 1, pacman_new_pos[1]),
+                        (pacman_new_pos[0], pacman_new_pos[1] + 1), (pacman_new_pos[0], pacman_new_pos[1] - 1)])
+
+        features['strong-ghost-1-step-away'] = -6.57 - 7.8 * strong_ghost_away(pacman_new_pos)
+        features['strong-ghost-2-step-away'] = -6.8 + 2.56 * strong_ghost_2_away()
+
+
+        # If there are weak ghosts (scared ghosts)
+        if min_ghost_distance!=inf:
+            # get the nearest ghost
+            features['closest-weak-ghost'] = -0.47 + 4.85 * min_ghost_distance
+
+        features['weak-ghost'] = -3.4 - 2.01 * len(scared_ghosts)
+
+        # Part 3. Food and capsule.
+
+        # If there are any scared ghosts, we tend to eat that ghost regardless of food and capsule.
+        # So we set parameters of these to zero, and rely on only '#-of-strong-ghost-1/2-step-away' and 'weak-ghost'
+        if max(scaredTimes) > 0:
+            features['eats-capsule'] = 0
+            features['eats-food'] = 0
+            features['nearest-capsule'] = 0
+            features['nearest-food'] = 0
+        else:
+            # If there are a ghost 1 step away, we tend to focus on escaping and forget about food here.
+            # So in this case, we set 'eats-capsule' and 'eats-food' to zero.
+            if features['strong-ghost-1-step-away'] != 0:
+                features['eats-capsule'] = 0
+                features['eats-food'] = 0
+
+            # Check food and capsule
+            else:
+                # Check if we can eat capsule in the next step
+                if pacman_new_pos not in capsule:
+                    features['eats-capsule'] = 0
+                else:
+                    features['eats-capsule'] = 50
+
+                # If there are capsules, we ignore food.
+                # If no capsules, we check if we can eat food in the next step.
+                if capsule or not foods[pacman_new_pos[0]][pacman_new_pos[1]]:
+                    features['eats-food'] = 0
+                else:
+                    features['eats-food'] = 9
+
+            # Then we consider the closest food and capsule.
+            # Similarly, if there are capsules, we ignore food.
+            if capsule:
+                features['nearest-capsule'] = 5.98 + 4.2 * min_capsule_distance
+                features['nearest-food'] = 0
+            else:
+                features['nearest-capsule'] = 0
+
+                if min_food_distance != inf:
+                    features['nearest-food'] = 5 - 0.015 * min_food_distance
+                else:
+                    features['nearest-food'] = 0
+
+        features['bias'] = -1.19
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # Learning will work much better if your features have a maximum absolute value of 1. 
+        # Shrinking the whole feature vector so that the sum of weights is less than 1 can help even further. 
+        # See util.Counter.divideAll() for scaling your feature vector
+        sum = features.totalCount()
+        if sum > 0:
+            features.divideAll(sum + 1)
+        return features
+"""

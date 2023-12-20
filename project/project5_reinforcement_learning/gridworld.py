@@ -479,7 +479,7 @@ if __name__ == '__main__':
     # GET THE AGENT
     ###########################
 
-    import valueIterationAgents, qlearningAgents
+    import valueIterationAgents, m_qlearningAgents
     a = None
     if opts.agent == 'value':
         a = valueIterationAgents.ValueIterationAgent(mdp, opts.discount, opts.iters)
@@ -492,7 +492,7 @@ if __name__ == '__main__':
                       'alpha': opts.learningRate,
                       'epsilon': opts.epsilon,
                       'actionFn': actionFn}
-        a = qlearningAgents.QLearningAgent(**qLearnOpts)
+        a = m_qlearningAgents.QLearningAgent(**qLearnOpts)
     elif opts.agent == 'random':
         # # No reason to use the random agent without episodes
         if opts.episodes == 0:
