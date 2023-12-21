@@ -98,8 +98,9 @@ class QLearningAgent(ReinforcementAgent):
 
         best_q_value = self.computeValueFromQValues(state)
         for action in legal_actions:
-            if self.getQValue(state, action) == best_q_value:
+            if abs(self.getQValue(state, action) - best_q_value) < 1e-15:
                 possible_actions.append(action)
+                return action
         
         if len(possible_actions) == 0:
           return None
@@ -249,10 +250,120 @@ class ApproximateQAgent(PacmanQAgent):
             "*** YOUR CODE HERE ***"
             pass
 
-# class BetterExtractor(FeatureExtractor):
-#     "Your extractor entry goes here.  Add features for capsuleClassic."
+
+# MazeDistance from pa1
+def mazeDistance(point1, goals, gameState) -> int:
+    """
+    Returns the maze distance between any two points, using the search functions
+    you have already built. The gameState can be any game state -- Pacman's
+    position in that state is ignored.
+
+    Example usage: mazeDistance( (2,4), (5,6), gameState)
+
+    This might be a useful helper function for your ApproximateSearchAgent.
+    """
+    walls = gameState.getWalls()
+
+    # do bfs from point1 until first time find the point2
+    from game import Directions
+    from util import Queue
+    q = Queue()
+    visited = set()
+    q.push((point1, 0))
+    visited.add(point1)
+    while not q.isEmpty():
+        point, distance = q.pop()
+        if point in goals:
+            return distance / (walls.width * walls.height)
+        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            x, y = point
+            dx, dy = Actions.directionToVector(action)
+            new_point = (int(x + dx), int(y + dy))
+            if new_point not in visited and not walls[new_point[0]][new_point[1]]:
+                visited.add(new_point)
+                q.push((new_point, distance + 1))
+    return None
+
+class BetterExtractor(FeatureExtractor):
+    "Your extractor entry goes here.  Add features for capsuleClassic."
     
-#     def getFeatures(self, state, action):
-#         features = SimpleExtractor().getFeatures(state, action)
-#         # Add more features here
-#         "*** YOUR CODE HERE ***"
+    import pacman
+    def getFeatures(self, state:pacman.GameState, action):
+        features = SimpleExtractor().getFeatures(state, action)
+        # Add more features here
+        "*** YOUR CODE HERE ***"
+
+        foods = state.getFood()
+        food_list = foods.asList()
+        capsules = state.getCapsules()
+        
+        walls = state.getWalls()
+        ghosts = state.getGhostPositions()
+        ghostStates = state.getGhostStates()
+        scare_times = [ghostState.scaredTimer for ghostState in ghostStates]
+
+        pacman_pos = state.getPacmanPosition()
+        newPos = Actions.getSuccessor(pacman_pos, action)
+        newPos = (int(newPos[0]), int(newPos[1]))
+
+        min_food_distance = mazeDistance(newPos, food_list, state)
+        min_ghost_distance = mazeDistance(newPos, ghosts, state)
+        min_capsule_distance = mazeDistance(newPos, capsules, state)
+
+        scared_ghost = [ghost_state for ghost_state in ghostStates if ghost_state.scaredTimer > 0]
+        unscared_ghost = [ghost_state for ghost_state in ghostStates if ghost_state.scaredTimer == 0]
+
+        features.divideAll(1e8)
+        w = {'scared_ghost' : -2.01, 'eat_ghost' : 4.85, 'capsule' : 4, 'near_ghost' : -7.8, 'close_ghost' : 2.56, }
+        bias = {'scared_ghost' : -3.4, 'eat_ghost' : -0.47, 'capsule' : 6, 'near_ghost' : -6.57, 'close_ghost' : -6.8, }
+
+        # capsule
+        if scared_ghost == [] and min_capsule_distance != None:
+            features['capsule'] = w['capsule'] * min_capsule_distance + bias['capsule']
+
+        # ghosts
+        features['scared_ghost'] = w['scared_ghost'] * len(scared_ghost) + bias['scared_ghost']
+        
+        scared_ghost_pos = []
+        for ghost_state in scared_ghost:
+            ghost_new_pos = Actions.getSuccessor(ghost_state.getPosition(), ghost_state.getDirection())
+            ghost_new_pos = (int(ghost_new_pos[0]), int(ghost_new_pos[1]))
+            scared_ghost_pos.append(ghost_new_pos)
+        min_dis_scared_ghost = mazeDistance(newPos, scared_ghost_pos, state)
+
+        if min_dis_scared_ghost != None:
+            features['eat_ghost'] = w['eat_ghost'] * min_dis_scared_ghost + bias['eat_ghost']
+
+
+        neibors = Actions.getLegalNeighbors(newPos, walls)
+        # ghost in pacman's neibor
+        num_near_ghost = sum(ghost_state.getPosition() in neibors for ghost_state in unscared_ghost)
+
+        # ghost in pacman's neibor's neibor
+        num_close_ghost = 0
+        new_neibors = [(newPos[0] + 1, newPos[1]), (newPos[0], newPos[1] + 1), (newPos[0] - 1, newPos[1]), (newPos[0], newPos[1] - 1)]
+        for neibor in new_neibors:
+            num_close_ghost += sum(neibor in Actions.getLegalNeighbors(ghostState.getPosition(), walls) \
+                                   for ghostState in unscared_ghost)
+
+        features['near_ghost'] = w['near_ghost'] * num_near_ghost + bias['near_ghost']
+        features['close_ghost'] = w['close_ghost'] * num_close_ghost + bias['close_ghost']
+
+        features['bias'] = -1
+
+        # print("====================================")
+        # print(f"====  sum = {features.totalCount()}  ====")
+        # print("====================================")
+
+        max_feature = -19260817
+        for feature in features:
+            max_feature = max(max_feature, abs(features[feature]))
+
+        # print("====================================")
+        # print(f"====  maxn = {max_feature}  ====")
+        # print("====================================")
+        
+        # learning will work much better if your features have a maximum absolute value of 1.
+        # Shrinking the whole feature vector so that the sum of weights is less than 1 can help even further
+        features.divideAll(min(max_feature + 4, 10))
+        return features
