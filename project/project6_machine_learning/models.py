@@ -28,6 +28,10 @@ class PerceptronModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # print(type(x))
+        # x is also a nn.Constant
+        return nn.DotProduct(self.get_weights(), x)
+
     def get_prediction(self, x):
         """
         Calculates the predicted class for a single data point `x`.
@@ -36,12 +40,42 @@ class PerceptronModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # use nn.as_scalar to convert a scalar Node into a Python floating-point number
+        # print(self.run(x), nn.as_scalar(self.run(x)))
+        val = nn.as_scalar(self.run(x))
+        # == 0 is the positive class
+        if val >= 0:
+            return 1
+        return -1
+
     def train(self, dataset):
         """
         Train the perceptron until convergence.
         """
         "*** YOUR CODE HERE ***"
 
+        # print(type(dataset))
+        # <class 'backend.Dataset'>
+
+        # repeatedly loop over the data set and make updates on examples that are misclassified
+        while True:
+            converge = True
+
+            # When training a perceptron or neural network, you will be passed a dataset object.
+            # You can retrieve batches of training examples by calling dataset.iterate_once(batch_size):
+            batch_size = 1
+            for x, y in dataset.iterate_once(batch_size):
+                # print(x, y)
+                label = nn.as_scalar(y)
+                if self.get_prediction(x) != label:
+                    # Use the update method of the nn.Parameter class to update the weights
+                    # parameter.update(direction, multiplier)
+                    self.get_weights().update(x, label)
+                    converge = False
+            
+            if converge:
+                break
+            
 class RegressionModel(object):
     """
     A neural network model for approximating a function that maps from real
