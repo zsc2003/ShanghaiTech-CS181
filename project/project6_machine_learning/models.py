@@ -75,7 +75,7 @@ class PerceptronModel(object):
             
             if converge:
                 break
-            
+
 class RegressionModel(object):
     """
     A neural network model for approximating a function that maps from real
@@ -85,6 +85,20 @@ class RegressionModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+
+        # make the nn has 1 hidden layer, with `neural_num` neurals
+        neural_num = 64
+        self.w1 = nn.Parameter(1, neural_num)
+        self.b1 = nn.Parameter(1, neural_num)
+        # choose ReLU to be the activate function 
+        self.activate1 = nn.ReLU
+
+        # the output layer
+        self.w2 = nn.Parameter(neural_num, 1)
+        self.b2 = nn.Parameter(1, 1)
+
+        # choose L2 loss to be the loss function
+        self.loss_function = nn.SquareLoss
 
     def run(self, x):
         """
@@ -96,6 +110,18 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
+        # print(x.data.shape)
+
+        # hidden layer
+        f_x = nn.Linear(x, self.w1)
+        f_x = nn.AddBias(f_x, self.b1)
+        f_x = self.activate1(f_x)
+
+        # output layer
+        f_x = nn.Linear(f_x, self.w2)
+        f_x = nn.AddBias(f_x, self.b2)
+
+        return f_x
 
     def get_loss(self, x, y):
         """
@@ -108,12 +134,45 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return self.loss_function(self.run(x), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        # sample_point = 0
+        # for x, y in dataset.iterate_once(batch_size=1):
+        #     sample_point += 1
+        # print("sample_point = ", sample_point)
+
+        # sample_point =  200
+        # AssertionError: Dataset size 200 is not divisible by batch size 32
+        batch_size = 20
+        last_loss = float('inf')
+        converge = False
+        while converge == False:
+
+            for x, y in dataset.iterate_once(batch_size):
+                loss = self.get_loss(x, y)
+                loss_num = nn.as_scalar(loss)
+                # print(loss_num)
+
+                # gets a loss of 0.02 or better
+                # print('loss change: ', abs(last_loss - loss_num))
+                if loss_num < 0.002:
+                    converge = True
+                    break
+                
+                last_loss = loss_num
+
+                # back propagation
+                lr = 1e-3
+                grad_w1, grad_b1, grad_w2, grad_b2 = nn.gradients(loss, [self.w1, self.b1, self.w2, self.b2])
+                self.w1.update(grad_w1, -lr)
+                self.b1.update(grad_b1, -lr)
+                self.w2.update(grad_w2, -lr)
+                self.b2.update(grad_b2, -lr)
 
 class DigitClassificationModel(object):
     """
@@ -133,6 +192,26 @@ class DigitClassificationModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
+        # 2 hidden layer
+        # 28 * 28 = 784 neurals
+        neural_num = 512
+        self.w1 = nn.Parameter(784, neural_num)
+        self.b1 = nn.Parameter(1, neural_num)
+        self.activate1 = nn.ReLU
+
+        self.w2 = nn.Parameter(neural_num, neural_num // 2)
+        self.b2 = nn.Parameter(1, neural_num // 2)
+        self.activate2 = nn.ReLU
+
+        # total 10 classes
+        self.w3 = nn.Parameter(neural_num // 2, 10)
+        self.b3 = nn.Parameter(1, 10)
+
+        # Do not put a ReLU activation after the last layer of the network
+
+        # use nn.SoftmaxLoss as classification loss
+        self.loss_function = nn.SoftmaxLoss
+
     def run(self, x):
         """
         Runs the model for a batch of examples.
@@ -148,6 +227,20 @@ class DigitClassificationModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        
+        f_x = nn.Linear(x, self.w1)
+        f_x = nn.AddBias(f_x, self.b1)
+        f_x = self.activate1(f_x)
+
+        f_x = nn.Linear(f_x, self.w2)
+        f_x = nn.AddBias(f_x, self.b2)
+        f_x = self.activate2(f_x)
+
+        # output layer
+        f_x = nn.Linear(f_x, self.w3)
+        f_x = nn.AddBias(f_x, self.b3)
+
+        return f_x
 
     def get_loss(self, x, y):
         """
@@ -163,12 +256,43 @@ class DigitClassificationModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
-
-    def train(self, dataset):
+        return self.loss_function(self.run(x), y)
+    
+    # for highlight 
+    import backend 
+    def train(self, dataset : backend.DigitClassificationDataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        import math
+
+        batch_size = 60
+        converge = False
+        start_lr = 6e-1
+        end_lr = 1e-1
+        gamma = (end_lr / start_lr) ** (1 / 2000)
+        lr = start_lr
+        iter = 1
+        while converge == False:
+            for x, y in dataset.iterate_once(batch_size):
+                loss = self.get_loss(x, y)
+
+                var = nn.gradients(loss, [self.w1, self.b1, self.w2, self.b2, self.w3, self.b3])
+                self.w1.update(var[0], -lr)
+                self.b1.update(var[1], -lr)
+                self.w2.update(var[2], -lr)
+                self.b2.update(var[3], -lr)
+                self.w3.update(var[4], -lr)
+                self.b3.update(var[5], -lr)
+
+                # it may help to set a slightly higher stopping threshold on validation accuracy, such as 97.5% or 98%
+                if dataset.get_validation_accuracy() > 0.975:
+                    converge = True
+                    break
+                if iter <= 2:
+                    lr *= gamma
+            iter += 1
 
 class LanguageIDModel(object):
     """
@@ -188,6 +312,21 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+
+        # The hidden size should be sufficiently large
+        neural_num = 512
+        
+        # W
+        self.w1 = nn.Parameter(self.num_chars, neural_num)
+
+        # W_hidden
+        self.w2 = nn.Parameter(neural_num, neural_num)
+
+        # there are total 5 languages
+        self.w3 = nn.Parameter(neural_num, 5)
+
+        # the classification task
+        self.loss_function = nn.SoftmaxLoss
 
     def run(self, xs):
         """
@@ -220,6 +359,21 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # z0 = x0 * W
+        z0 = nn.Linear(xs[0], self.w1)
+        hi = z0
+
+        for i in range(1, len(xs)):
+            # zi = xi * W + hi * W_hidden
+            # you should replace a computation of the form z = nn.Linear(x, W) with a computation of the form 
+            # z = nn.Add(nn.Linear(x, W), nn.Linear(h, W_hidden))
+            zi = nn.Add(nn.ReLU(nn.Linear(xs[i], self.w1)), nn.ReLU(nn.Linear(hi, self.w2)))
+            hi = zi
+        
+        # output layer
+        output = nn.Linear(hi, self.w3)
+        return output
+
     def get_loss(self, xs, y):
         """
         Computes the loss for a batch of examples.
@@ -236,8 +390,37 @@ class LanguageIDModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        return self.loss_function(self.run(xs), y)
+
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        lr = 6e-1
+        batch_size = 20
+        start_lr = 6e-1
+        end_lr = 1e-1
+        gamma = (end_lr / start_lr) ** (1 / 2000)
+        lr = start_lr
+        iter = 1
+        converge = False
+        
+        while converge == False:
+            for x, y in dataset.iterate_once(batch_size):
+                loss = self.get_loss(x, y)
+
+                var = nn.gradients(loss, [self.w1, self.w2, self.w3])
+                self.w1.update(var[0], -lr)
+                self.w2.update(var[1], -lr)
+                self.w3.update(var[2], -lr)
+
+                # reference implementation can still correctly classify over 89% of the validation set
+                if dataset.get_validation_accuracy() > 0.89:
+                    converge = True
+                    break
+                
+                if iter <= 2:
+                    lr *= gamma
+            iter += 1
+
