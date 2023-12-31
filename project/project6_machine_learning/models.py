@@ -151,28 +151,39 @@ class RegressionModel(object):
         batch_size = 20
         last_loss = float('inf')
         converge = False
+
+        start_lr = 6e-2
+        end_lr = 1e-2
+        gamma = (end_lr / start_lr) ** (1 / 20)
+        iter = 1
+
+        lr = start_lr
         while converge == False:
 
             for x, y in dataset.iterate_once(batch_size):
                 loss = self.get_loss(x, y)
                 loss_num = nn.as_scalar(loss)
                 # print(loss_num)
+                # print('lr = ', lr)
 
                 # gets a loss of 0.02 or better
                 # print('loss change: ', abs(last_loss - loss_num))
-                if loss_num < 0.002:
+                if loss_num < 0.005:
                     converge = True
                     break
                 
                 last_loss = loss_num
 
                 # back propagation
-                lr = 1e-3
                 grad_w1, grad_b1, grad_w2, grad_b2 = nn.gradients(loss, [self.w1, self.b1, self.w2, self.b2])
                 self.w1.update(grad_w1, -lr)
                 self.b1.update(grad_b1, -lr)
                 self.w2.update(grad_w2, -lr)
                 self.b2.update(grad_b2, -lr)
+
+                if iter <= 2:
+                    lr *= gamma
+            iter += 1
 
 class DigitClassificationModel(object):
     """
@@ -194,7 +205,7 @@ class DigitClassificationModel(object):
 
         # 2 hidden layer
         # 28 * 28 = 784 neurals
-        neural_num = 512
+        neural_num = 256
         self.w1 = nn.Parameter(784, neural_num)
         self.b1 = nn.Parameter(1, neural_num)
         self.activate1 = nn.ReLU
@@ -269,11 +280,12 @@ class DigitClassificationModel(object):
 
         batch_size = 60
         converge = False
-        start_lr = 6e-1
+        start_lr = 8e-1
         end_lr = 1e-1
         gamma = (end_lr / start_lr) ** (1 / 2000)
-        lr = start_lr
         iter = 1
+
+        lr = start_lr
         while converge == False:
             for x, y in dataset.iterate_once(batch_size):
                 loss = self.get_loss(x, y)
@@ -397,15 +409,18 @@ class LanguageIDModel(object):
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
-        lr = 6e-1
-        batch_size = 20
-        start_lr = 6e-1
+
+        # Dataset size 17500
+        batch_size = 100
+        
+        start_lr = 8e-1
         end_lr = 1e-1
-        gamma = (end_lr / start_lr) ** (1 / 2000)
+        gamma = (end_lr / start_lr) ** (1 / 350)
         lr = start_lr
         iter = 1
         converge = False
         
+        lr = start_lr
         while converge == False:
             for x, y in dataset.iterate_once(batch_size):
                 loss = self.get_loss(x, y)
