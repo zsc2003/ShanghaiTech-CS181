@@ -1,0 +1,17 @@
+\subsubsection{Q-Learning}
+
+Q-learning is a reinforcement learning approach, we hope we can learn a better strategy while taking action. 
+We define the Q value($Q(s, a)$) as the current state which is represented by the current board, and the action which is represented by the next board because we are dealing with a determinate action. Besides, we use the evaluate function mentioned in section \textbf{Score Function} to define the reward in two different ways.
+
+$$r1(s,a,W) = f(s,W) - f(s',W) $$
+$$r2(s,a,W) = [f(s,W) - f(s',W)] - [f(s',B) - f(s'',B)]$$
+
+where $f$ is the evaluate function, $s$ is the current board, $s'$ is the next board, $s''$ is the board after the opponent's action, and we are WHITE as an example. Specifically, we get a positive reward if we eat pieces, move toward the opponent, or win. The two ways differ mainly in whether we consider the opponents' reward. Experiments show that they are almost the same and the second one is a bit better.
+% More comparison experiments will be shown in Section $\textbf{Result}$.
+
+Considering the training, we train our agents against random agents. As we take an action, we have a new sample and we use the sample to update our Q-value, the procedure is as follows:
+
+$$sample = r1(s,a,W) + \gamma \mathop{\max}_{{a'}}  Q(s',a')$$
+$$Q(s,a) \gets (1 - \alpha)Q(s,a) + \alpha (sample)$$
+
+As to the parameters, we also have ideas and experiments. $\gamma$ is the discounting factor that decides whether we prefer early reward. In Draught, there is a special rule which is ``must eat when you can eat", so a strategy that we can sacrifice a piece to control the opponent's action, thus benefiting long-term situation may exist, which makes the discounting factor $\gamma>1$ possible. Based on this we try the discounting factor from $0.8$ to $1.1$. The results show that $0.8$ works better and we think the main reason lies in that the agent's intelligence now didn't reach the level that may consider such a complex strategy. Moreover, we set $\epsilon$ to $0.4$ to enable our agent to explore more states. However, when testing, we still have problems that we possibly meet an unvisited Q-state and we can only regard its Q-value as $0$.

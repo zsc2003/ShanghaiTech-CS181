@@ -1,0 +1,59 @@
+\section{Methods}
+In this part, we will make the notion that $transition = (s, a, s')$, which means that the state $s$ will transition to $s'$ if the action is $a$. 
+
+% ------------------------------------
+\subsection{Score Function}
+\label{score function}
+In our methods mentioned in the introduction, most of them need a score function to evaluate whether the taken action is preferable or not. As a result, how to design a reasonable and effective score function is significant. During all the different methods, the factors that affect the score function are similar. The influencing factors are:
+\begin{enumerate}
+    \item \textbf{The number of pieces that survived} Since the condition that we don't lose is that we still have pieces that survive on the board, so we should try to make more of our pieces survive. Meanwhile, our movements aim to eat all the pieces of the opponent, so the fewer of the opponent's pieces are, the better the state is. So the number of pieces that survived, both our pieces and the opponent's pieces, matters.
+    \item \textbf{The number of kings that exist} Since the king can go backward rather than the non-king piece which can only go forward, the number of kings should be considered in the score function. We should try to make the number of our kings bigger and the number of the opponent's kings smaller.
+    \item \textbf{The sum of our all non-king pieces' distances to the opponent's bottom line of the board} Since we need to make more of our kings, the sum of our all non-king pieces' distances to the opponent's bottom line of the board reflects the potential to have more kings. The smaller the sum of distances is, the bigger the potential will be. 
+    \item \textbf{The sum of our all pieces' distances to the left or right line of the board} Considering the piece which is next to the left or right line cannot be eaten, we can try to move more pieces to the positions that are next to the left or right line of the board. We can measure this feature by the sum of all pieces' distances to the left or right line of the board, while the distance of pieces next to the left or right line is zero. The smaller the sum of distances is, the better the situation is.
+\end{enumerate}
+Although different methods differ in the process of getting the best action, as they share the same influencing factors, they can use the same score function to evaluate one state. In most of our methods, the score function we use is:\\
+\begin{equation}
+\begin{aligned}
+f(s) &= \omega_1*(N_{\text{our-survived}}-N_{\text{opponent-survived}})
+\\ &+\omega_2*(N_{\text{our-kings}}-N_{\text{opponent-kings}})
+\\ &+\omega_3*\sum\limits_{\text{our non-king pieces}}\frac{1}{L_{\text{dis-to-bottom}}}
+\\ &+\omega_4*\sum\limits_{\text{our pieces}}\frac{1}{min(L_{\text{dis-to-left}}, L_{\text{dis-to-right}})+1}
+\end{aligned}
+\end{equation}
+where $N$ means the number of pieces, and $L$ means the distance between the selected piece and the target line. What's more, since every non-king piece's distance to the bottom line is not zero, the denominator of the third feature is not zero. But the sum of the minimal distance of each piece to the left or right line may be zero. So we can add 1 to the denominator of the fourth feature to avoid the infinity value of the score function. $\omega_1$ to $\omega_4$ is the weights of each feature. In our implementation, the parameters we use are $\omega_1=1,\omega_2=2,\omega_3=1,\omega_4=0.5$.
+
+% ------------------------------------
+\subsection{Random}
+A naive but fast agent for a draught game is a random agent, for a given game board and given turns, we could get all possible moves, then we randomly choose one and perform the move. Note that for other games, random agents will perform extremely poorly. But for draught, due to the special rule, that piece must eat the opponent piece if available and small game board, the random agent's performance is not so bad, and it is an ideal agent for fast testing with other types of agents. 
+
+% ------------------------------------
+\subsection{Greedy}
+A simple improvement of the search agent is a greedy method. For the current state, firstly we get all the valid actions. For each action, we can get the state after movement. Then we can use the score function in section \textbf{Score Function} to get the reward of each state. Then we choose the action with the highest score. Thus, we achieve the best local solution of depth one.
+
+% ------------------------------------
+\subsection{Minimax Search}
+As a two-player game, a straightforward and efficient method to solve the draught is adversarial search. Here we deploy minimax search to draught, each time the agent finds the optimal search with the assumption that the opponent will move optimally. We implement this algorithm recursively, and to limit the time of each search, we limit the maximum search steps. When the algorithm stops the search, we use the score function to evaluate the current game board score to choose the optimal move. 
+
+We also apply the alpha-beta pruning algorithm to decrease the nodes of the search tree, by pruning nodes with bad performance, we could increase the search depth in a limited time, thus improving the performance. 
+
+% ------------------------------------
+\subsection{Reinforcement Learning}
+\subsubsection{Monte-Carlo Tree Search}
+MCTS (Monte-Carlo Tree Search), a well-known algorithm used in Alpha-GO, could handle large state space problems and complex decision trees. Here we apply MCTS to classical draught games. As shown in figure \ref{fig:mcts}, the MCTS algorithm builds the search tree during the iterations of four steps: Selection, Expansion, Simulation, and Backpropagation. To build the tree, we define our tree structure with tree nodes. For each node, we store the visit time, win time, and parent and children. For the current node, we could use the rule of draught to find all possible movements as the children of the node. Then we explain the details of the four steps. 
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/mcts.png}
+    \caption{Illustration of the MCTS algorithm steps}
+    \label{fig:mcts}
+\end{figure}
+\begin{enumerate}
+    \item \textbf{Selection} We start from the root node of the search tree, representing the current state of the game, where we use board class to store the current game state. Then we use the UCT (Upper Confidence Bound for Tree) selection policy to select child nodes. The UCT is an application of UCB, and the value can be obtained by $$\mathop{\arg\max}\limits_{v' \in {\rm children \, of} v} \dfrac{Q(v')}{N(v')} + c \sqrt{\dfrac{2 lnN(v)}{N(v')}}$$ where $v$ represents for the parent node, $v'$ is one of the child node of $v$, $N$ is the nodes' visit time, and $Q$ is the quality value of the current node. Note that c is chosen as $\frac{1}{\sqrt{2}}$ as an empirical constant. Each time we select the node with maximum UCT value, by selecting iteratively, we find the leaf node of the search tree that hasn't been fully expanded as a result of the selection step. 
+    \item \textbf{Expansion} After selecting a leaf node, we generate child nodes for the current node of possible future states, and then we add these nodes as the child nodes of the leaf node. 
+    \item \textbf{Simulation} After Expansion, we perform a simulation of one of the added child nodes. Here we randomly choose actions in the simulation step to estimate the possible final state of the current node. Note that for the speed of the agent, we will limit the max actions step, so if the node needs large steps to get the final state, we will end this step ahead and regard the player that has more pieces as the winner. 
+    \item \textbf{Backpropagation} Lastly, we perform backpropagation through the tree to update all parent nodes of the search path. We update the visit times and the reward of win or lose to each node.
+\end{enumerate}
+As for an MCTS agent, we first initialize a state class to store the current state of the game, then we perform the four steps for fixed iterations. After building the tree for search, we choose the best child of the current node by finding the maximum layouts and return the corresponding best action. With a larger number of iterations, the tree is built more richly, thus the agent will be more intelligent. However increasing the number of iterations will also result in longer inference time, so a balance between iterations and intelligence is important. 
+
+% ------------------------------------
+\input{chapters/Q_learning}
+\input{chapters/approximate_Q_learning}

@@ -1,0 +1,130 @@
+\section{Results}
+Below are the results of our experiments, including our main methods: minimax, MCTS, Q-learning, approximate Q-learning against our MCTS, and the baseline random agent. In the final test, we play 100 games and count the number of winning games.
+The first discovery we made is that there exists a large advantage to being the Sente(start first), so for every pair of comparisons, we switch sides to have a deep assessment of the algorithm's performance. 
+
+As is shown in the tables,  all our implementations perform better than the random baseline. Combing the performance of Sente and the performance of Gote, we can rank these methods: Minimax \textgreater   MCTS \textgreater approximate Q-Learning \textgreater Q-Learning \textgreater random, which proves that our idea that Q-Learning is not able to visit enough states is right. Approximate Q-Learning achieves a better performance while using less memory. 
+
+In Table \ref{fig:sentenn} and Table \ref{fig:gotenn}, we show the result after we add a neural prior as a feature in approximate Q-Learning, which demonstrates improvements especially when being Gote. 
+
+
+\begin{table*}[h]
+    \centering
+    \renewcommand{\arraystretch}{2}
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        \diagbox{Gote}{Sente} & Random & Search & Monte-Carlo Tree Search & Q-Learning & Approximate Q-Learning \\
+        \hline
+        Random & 52\% & 100\% & 93\% & 85\% & 89\% \\
+        \hline
+        Monte-Carlo Tree Search & 19\% & 87\% & 81\% & 59\% & 63\% \\
+        \hline
+    \end{tabular}
+    \caption{The comparison between different methods, note that the winning rate is for the Sente agent}
+\end{table*}
+
+\begin{table*}[h]
+    \centering
+    \renewcommand{\arraystretch}{2}
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        \diagbox{Sente}{Gote} & Random & Search & Monte-Carlo Tree Search & Q-Learning & Approximate Q-Learning \\
+        \hline
+        Random & 48\% & 87\% & 82\% & 74\% & 68\% \\
+        \hline
+        Monte-Carlo Tree Search & 7\% & 39\% & 19\% & 16\% & 19\% \\
+        \hline
+    \end{tabular}
+    \caption{The comparison between different methods, note that the winning rate is for the Gote agent}
+\end{table*}
+
+% \begin{table*}[h]
+%     \centering
+%     \renewcommand{\arraystretch}{2}
+%     \begin{tabular}{|c|c|c|c|c|c|}
+%         \hline
+%         \diagbox{Gote}{Sente} & Random & Search & Monte-Carlo Tree Search & Q-Learning & Approximate Q-Learning \\
+%         \hline
+%         Random & 52\% & 100\% & 93\% & 85\% & 89\% \\
+%         \hline
+%         Search & 13\% & 100\% & 61\% & 46\% & 52\% \\
+%         \hline
+%         Monte-Carlo Tree Search & 19\% & 82\% & 81\% & 59\% & 63\% \\
+%         \hline
+%         Q-Learning & 32\% & 94\% & 84\% & 73\% & 83\% \\
+%         \hline
+%         Approximate Q-Learning & 29\% & 85\% & 83\% & 66\% & 77\% \\
+%         \hline
+%     \end{tabular}
+%     \caption{The comparison between different methods, Note that the winning rate is }
+% \end{table*}
+
+% \begin{table}[h]
+%     \centering
+%     \renewcommand{\arraystretch}{2}
+%     \begin{tabular}{|c|c|c|c|}
+%         \hline
+%         \diagbox{Gote}{Sente} & Depth 3 & Depth 5 & Depth 7 \\
+%         \hline
+%         Depth 3 & 100\% & 100\% & 100\%\\
+%         \hline
+%         Depth 5 & 1 & 100\% & 100\%\\
+%         \hline
+%         Depth 7 & 1 &  & 98\% \\
+%         \hline
+%     \end{tabular}
+%     \caption{The comparison of different depths of Minimax}
+% \end{table}
+
+% \begin{table}[h]
+%     \centering
+%     \renewcommand{\arraystretch}{2}
+%     \begin{tabular}{|c|c|c|c|}
+%         \hline
+%         \diagbox{Gote}{Sente} & \makecell[c]{Approximate \\ Q-Learning \\ w/o neural prior} & \makecell[c]{Approximate \\ Q-Learning \\ with neural prior} \\
+%         \hline
+%         \makecell[c]{Approximate \\ Q-Learning \\ w/o neural prior} & 77\% & 81\% \\
+%         \hline
+%         \makecell[c]{Approximate \\ Q-Learning \\ with neural prior} & 72\% & 78\% \\
+%         \hline
+%     \end{tabular}
+%     \caption{The comparison of Q-Learning with and without neural prior}
+% \end{table}
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{2}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \diagbox{Gote}{Sente} & \makecell[c]{Approximate \\ Q-Learning \\ w/o neural prior} & \makecell[c]{Approximate \\ Q-Learning \\ with neural prior} \\
+        \hline
+        \makecell[c]{Random} & 89\% & 91\% \\
+        \hline
+        \makecell[c]{MCTS} & 63\% & 67\% \\
+        \hline
+    \end{tabular}
+    \caption{The comparison of Q-Learning with and without neural prior, note that the winning rate is for the Sente agent}
+    \label{fig:sentenn}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{2}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \diagbox{Sente}{Gote} & \makecell[c]{Approximate \\ Q-Learning \\ w/o neural prior} & \makecell[c]{Approximate \\ Q-Learning \\ with neural prior} \\
+        \hline
+        \makecell[c]{Random} & 68\% & 76\% \\
+        \hline
+        \makecell[c]{MCTS} & 19\% & 18\% \\
+        \hline
+    \end{tabular}
+    \caption{The comparison of Q-Learning with and without neural prior, note that the winning rate is for the Gote agent}
+    \label{fig:gotenn}
+\end{table}
+
+\section{External Resources}
+% Here we list all the external resources used in this project. 
+% \begin{enumerate}
+%     \item \textbf{Libs}: PyGame, Pickle, Numpy, PyTorch
+% \end{enumerate}
+We use Python to implement this project, using PyGame for GUI and game logic, Numpy for fast computation, and PyTorch for the Neural Network including convolution network, ResNet, and Linear network used in the improved Q-Learning. 
